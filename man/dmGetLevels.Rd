@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{dmGetLevels}
 \alias{dmGetLevels}
-\title{Get levels for subspaces}
+\title{Get levels for metric subspaces}
 \usage{
 dmGetLevels()
 }
@@ -10,7 +10,7 @@ dmGetLevels()
 Vector of levels
 }
 \description{
-Get levels for subspaces in a data model.
+Get levels for metric subspaces in a data model.
 }
 \examples{
 \dontrun{

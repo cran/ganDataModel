@@ -42,12 +42,12 @@ dmAddVolumeElements <- function(level) {
   }
 }
 
-#' Build subspaces for a data model for a level
+#' Build metric subspaces for a level
 #' 
 #' Read a data model and generative data from files,
-#' analyse the trained neural network in a data model for a level,
-#' determine subspaces with density values above the level,
-#' add obtained subspaces with assigned level to the data model
+#' analyze the contained neural network in the data model for a level,
+#' determine metric subspaces with density values above the level,
+#' add obtained metric subspaces to the data model
 #' and write it to original file.
 #'
 #' @param dataModelFileName Name of data model file
@@ -59,11 +59,12 @@ dmAddVolumeElements <- function(level) {
 #'
 #' @examples
 #' \dontrun{
-#' dmBuildSubspaces("dm.bin", 0.73, "gd.bin")}
-dmBuildSubspaces <- function(dataModelFileName, level, generativeDataFileName) {
+#' dmBuildMetricSubspaces("dm.bin", 0.7, "gd.bin")}
+dmBuildMetricSubspaces <- function(dataModelFileName, level, generativeDataFileName) {
   dmReset()
+
   dmRead(dataModelFileName, generativeDataFileName)
-  
+
   dmProgress("Step 1 of 3", dmGetNormalizedSize())
   dmAddVolumeElements(level)
   dmBuildVolumeElements()
@@ -73,15 +74,15 @@ dmBuildSubspaces <- function(dataModelFileName, level, generativeDataFileName) {
   
   dmProgress("Step 3 of 3")
   dmBuildVolumeElementGraph()
-  dmBuildSubspacesSub()
+  dmBuildMetricSubspacesSub()
   dmAddVolumeElementGraph()
   dmWrite(dataModelFileName)  
 }
 
-#' Remove subspaces from a data model for a level
+#' Remove metric subspaces for a level
 #' 
 #' Read a data model from file,
-#' remove subspaces from the data model for a level
+#' remove metric subspaces in the data model for a level
 #' and write it to original file.
 #'
 #' @param dataModelFileName Name of data model file
@@ -92,30 +93,29 @@ dmBuildSubspaces <- function(dataModelFileName, level, generativeDataFileName) {
 #'
 #' @examples
 #' \dontrun{
-#' dmRead("dm.bin", "gd.bin")
-#' dmRemoveSubspaces("dm.bin", 0.73)}
-dmRemoveSubspaces <- function(dataModelFileName, level) {
+#' dmRemoveMetricSubspaces("dm.bin", 0.7)}
+dmRemoveMetricSubspaces <- function(dataModelFileName, level) {
   dmReset()
   dmReadDataModel(dataModelFileName)
-  dmRemoveSubspacesSub(level)
+  dmRemoveMetricSubspacesSub(level)
   dmWrite(dataModelFileName)  
 }
 
-#' Get subspaces in a data model to which a data record is assigned
+#' Get metric subspaces in which a data record is contained
 #' 
-#' Determine to which pairs of level and enumerated subspace a data record is assigned.
+#' Determine in which metric subspaces in a data model a data record is contained.
 #'
 #' @param dataRecord List of a data record
 #'
-#' @return List of pairs of level and enumerated subspace
+#' @return List of list containing level and label of metric subspaces
 #' @export
 #'
 #' @examples
 #' \dontrun{
 #' dmRead("dm.bin", "gd.bin")
-#' dmGetAssignedSubspaces(list(4.4, 2.9, 1.4, 0.3))}
-dmGetAssignedSubspaces <- function(dataRecord) {
+#' dmGetContaineInMetricSubspaces(list(4.4, 2.9, 1.4, 0.3))}
+dmGetContainedInMetricSubspaces <- function(dataRecord) {
   l <- dmCalculateDensityValue(dataRecord)
-  levelSubspaces <- dmGetSubspacesSub(dataRecord, l)
-  levelSubspaces
+  levelMetricSubspaces <- dmGetMetricSubspacesSub(dataRecord, l)
+  levelMetricSubspaces
 }

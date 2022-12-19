@@ -27,10 +27,10 @@ None
 Read a data source and generative data from files,
 train a neural network
 which approximates density values for a data source in iterative training steps,
-create a data model with the trained neural network 
+create a data model containing the trained neural network 
 and write it to a file in binary format.
 }
 \examples{
 \dontrun{
-dmGTrain("dm.bin", "iris4d.bin", "gd.bin", 10000)}
+dmTrain("dm.bin", "ds.bin", "gd.bin", 10000)}
 }

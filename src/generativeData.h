@@ -73,6 +73,8 @@ public:
         }
         
         readWithoutTypeId(is);
+        
+        buildNormalizedNumberVectorVector();
     }
 
 private:

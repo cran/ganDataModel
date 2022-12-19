@@ -351,13 +351,13 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
-// dmBuildSubspacesSub
-int dmBuildSubspacesSub();
-RcppExport SEXP _ganDataModel_dmBuildSubspacesSub() {
+// dmBuildMetricSubspacesSub
+int dmBuildMetricSubspacesSub();
+RcppExport SEXP _ganDataModel_dmBuildMetricSubspacesSub() {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(dmBuildSubspacesSub());
+    rcpp_result_gen = Rcpp::wrap(dmBuildMetricSubspacesSub());
     return rcpp_result_gen;
 END_RCPP
 }
@@ -372,17 +372,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// dmGetSubspaceDenormalizedGenerativeData
-std::vector<float> dmGetSubspaceDenormalizedGenerativeData(float level, int subspace, float percent, bool boundary);
-RcppExport SEXP _ganDataModel_dmGetSubspaceDenormalizedGenerativeData(SEXP levelSEXP, SEXP subspaceSEXP, SEXP percentSEXP, SEXP boundarySEXP) {
+// dmGetMetricSubspaceDenormalizedGenerativeData
+std::vector<float> dmGetMetricSubspaceDenormalizedGenerativeData(float level, int metricSubspaceIndex, float percent, bool boundary);
+RcppExport SEXP _ganDataModel_dmGetMetricSubspaceDenormalizedGenerativeData(SEXP levelSEXP, SEXP metricSubspaceIndexSEXP, SEXP percentSEXP, SEXP boundarySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< float >::type level(levelSEXP);
-    Rcpp::traits::input_parameter< int >::type subspace(subspaceSEXP);
+    Rcpp::traits::input_parameter< int >::type metricSubspaceIndex(metricSubspaceIndexSEXP);
     Rcpp::traits::input_parameter< float >::type percent(percentSEXP);
     Rcpp::traits::input_parameter< bool >::type boundary(boundarySEXP);
-    rcpp_result_gen = Rcpp::wrap(dmGetSubspaceDenormalizedGenerativeData(level, subspace, percent, boundary));
+    rcpp_result_gen = Rcpp::wrap(dmGetMetricSubspaceDenormalizedGenerativeData(level, metricSubspaceIndex, percent, boundary));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dmGetMetricSubspaceIndices
+std::vector<int> dmGetMetricSubspaceIndices(float level, std::vector<std::string> labels);
+RcppExport SEXP _ganDataModel_dmGetMetricSubspaceIndices(SEXP levelSEXP, SEXP labelsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< float >::type level(levelSEXP);
+    Rcpp::traits::input_parameter< std::vector<std::string> >::type labels(labelsSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmGetMetricSubspaceIndices(level, labels));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -429,24 +441,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// dmGetNumberOfSubspaces
-int dmGetNumberOfSubspaces(float level);
-RcppExport SEXP _ganDataModel_dmGetNumberOfSubspaces(SEXP levelSEXP) {
+// dmGetMetricSubspaceProperties
+List dmGetMetricSubspaceProperties(float level);
+RcppExport SEXP _ganDataModel_dmGetMetricSubspaceProperties(SEXP levelSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< float >::type level(levelSEXP);
-    rcpp_result_gen = Rcpp::wrap(dmGetNumberOfSubspaces(level));
+    rcpp_result_gen = Rcpp::wrap(dmGetMetricSubspaceProperties(level));
     return rcpp_result_gen;
 END_RCPP
 }
-// dmRemoveSubspacesSub
-void dmRemoveSubspacesSub(float level);
-RcppExport SEXP _ganDataModel_dmRemoveSubspacesSub(SEXP levelSEXP) {
+// dmRemoveMetricSubspacesSub
+void dmRemoveMetricSubspacesSub(float level);
+RcppExport SEXP _ganDataModel_dmRemoveMetricSubspacesSub(SEXP levelSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< float >::type level(levelSEXP);
-    dmRemoveSubspacesSub(level);
+    dmRemoveMetricSubspacesSub(level);
     return R_NilValue;
 END_RCPP
 }
@@ -461,15 +473,41 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// dmGetSubspacesSub
-List dmGetSubspacesSub(List dataRecord, float level);
-RcppExport SEXP _ganDataModel_dmGetSubspacesSub(SEXP dataRecordSEXP, SEXP levelSEXP) {
+// dmGetMetricSubspacesSub
+List dmGetMetricSubspacesSub(List dataRecord, float level);
+RcppExport SEXP _ganDataModel_dmGetMetricSubspacesSub(SEXP dataRecordSEXP, SEXP levelSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< List >::type dataRecord(dataRecordSEXP);
     Rcpp::traits::input_parameter< float >::type level(levelSEXP);
-    rcpp_result_gen = Rcpp::wrap(dmGetSubspacesSub(dataRecord, level));
+    rcpp_result_gen = Rcpp::wrap(dmGetMetricSubspacesSub(dataRecord, level));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dmMetricSubspaceLabelPointsSub
+List dmMetricSubspaceLabelPointsSub(float lLevel, float rLevel, float percent, std::vector<int>& columnIndices, const std::vector<std::string>& lLabels);
+RcppExport SEXP _ganDataModel_dmMetricSubspaceLabelPointsSub(SEXP lLevelSEXP, SEXP rLevelSEXP, SEXP percentSEXP, SEXP columnIndicesSEXP, SEXP lLabelsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< float >::type lLevel(lLevelSEXP);
+    Rcpp::traits::input_parameter< float >::type rLevel(rLevelSEXP);
+    Rcpp::traits::input_parameter< float >::type percent(percentSEXP);
+    Rcpp::traits::input_parameter< std::vector<int>& >::type columnIndices(columnIndicesSEXP);
+    Rcpp::traits::input_parameter< const std::vector<std::string>& >::type lLabels(lLabelsSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmMetricSubspaceLabelPointsSub(lLevel, rLevel, percent, columnIndices, lLabels));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dmSortLevelIndices
+std::vector<int> dmSortLevelIndices(std::vector<float>& levels);
+RcppExport SEXP _ganDataModel_dmSortLevelIndices(SEXP levelsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<float>& >::type levels(levelsSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmSortLevelIndices(levels));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -508,17 +546,20 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ganDataModel_dmBuildVolumeElementTree", (DL_FUNC) &_ganDataModel_dmBuildVolumeElementTree, 0},
     {"_ganDataModel_dmBuildVolumeElementGraph", (DL_FUNC) &_ganDataModel_dmBuildVolumeElementGraph, 0},
     {"_ganDataModel_dmAddVolumeElementGraph", (DL_FUNC) &_ganDataModel_dmAddVolumeElementGraph, 0},
-    {"_ganDataModel_dmBuildSubspacesSub", (DL_FUNC) &_ganDataModel_dmBuildSubspacesSub, 0},
+    {"_ganDataModel_dmBuildMetricSubspacesSub", (DL_FUNC) &_ganDataModel_dmBuildMetricSubspacesSub, 0},
     {"_ganDataModel_dmGetGenerativeDataRandom", (DL_FUNC) &_ganDataModel_dmGetGenerativeDataRandom, 1},
-    {"_ganDataModel_dmGetSubspaceDenormalizedGenerativeData", (DL_FUNC) &_ganDataModel_dmGetSubspaceDenormalizedGenerativeData, 4},
+    {"_ganDataModel_dmGetMetricSubspaceDenormalizedGenerativeData", (DL_FUNC) &_ganDataModel_dmGetMetricSubspaceDenormalizedGenerativeData, 4},
+    {"_ganDataModel_dmGetMetricSubspaceIndices", (DL_FUNC) &_ganDataModel_dmGetMetricSubspaceIndices, 2},
     {"_ganDataModel_dmGetAdjacentVolumeElementIndices", (DL_FUNC) &_ganDataModel_dmGetAdjacentVolumeElementIndices, 1},
     {"_ganDataModel_dmGetMax", (DL_FUNC) &_ganDataModel_dmGetMax, 1},
     {"_ganDataModel_dmGetMin", (DL_FUNC) &_ganDataModel_dmGetMin, 1},
     {"_ganDataModel_dmGetLevels", (DL_FUNC) &_ganDataModel_dmGetLevels, 0},
-    {"_ganDataModel_dmGetNumberOfSubspaces", (DL_FUNC) &_ganDataModel_dmGetNumberOfSubspaces, 1},
-    {"_ganDataModel_dmRemoveSubspacesSub", (DL_FUNC) &_ganDataModel_dmRemoveSubspacesSub, 1},
+    {"_ganDataModel_dmGetMetricSubspaceProperties", (DL_FUNC) &_ganDataModel_dmGetMetricSubspaceProperties, 1},
+    {"_ganDataModel_dmRemoveMetricSubspacesSub", (DL_FUNC) &_ganDataModel_dmRemoveMetricSubspacesSub, 1},
     {"_ganDataModel_dmNormalizedDataRecord", (DL_FUNC) &_ganDataModel_dmNormalizedDataRecord, 1},
-    {"_ganDataModel_dmGetSubspacesSub", (DL_FUNC) &_ganDataModel_dmGetSubspacesSub, 2},
+    {"_ganDataModel_dmGetMetricSubspacesSub", (DL_FUNC) &_ganDataModel_dmGetMetricSubspacesSub, 2},
+    {"_ganDataModel_dmMetricSubspaceLabelPointsSub", (DL_FUNC) &_ganDataModel_dmMetricSubspaceLabelPointsSub, 5},
+    {"_ganDataModel_dmSortLevelIndices", (DL_FUNC) &_ganDataModel_dmSortLevelIndices, 1},
     {NULL, NULL, 0}
 };
 

@@ -22,18 +22,19 @@ using namespace std;
 
 const string cDifferentSizes = "Sizes of vectors are different";
 const string cNearestNeighborDifferent = "Nearest neighbor is different";
-int cMaxNearestNeighbours = 256;
+int cMaxNearestNeighbors = 256;
 
+template <typename T>
 struct LpDistance{
     LpDistance() {}
     virtual ~LpDistance() {
     }
-    virtual float operator()(const vector<float>& a, const vector<float>& b) = 0;
-    virtual LpDistance& assign(const LpDistance& lpDistance) = 0;
+    virtual float operator()(const vector<T>& a, const vector<T>& b) = 0;
 };
 
-struct L1Distance : public LpDistance {
-    float operator()(const vector<float>& a, const vector<float>& b) {
+template <typename T>
+struct L1Distance : public LpDistance<T> {
+    float operator()(const vector<T>& a, const vector<T>& b) {
         if(a.size() != b.size()) {
             throw string(cDifferentSizes);
         }
@@ -43,14 +44,11 @@ struct L1Distance : public LpDistance {
         }
         return d;
     }
-    LpDistance& assign(const LpDistance& lpDistance) {
-        *this = dynamic_cast<const L1Distance&>(lpDistance);
-        return *this;
-    }
 };
 
-struct L2Distance : public LpDistance {
-    float operator()(const vector<float>& a, const vector<float>& b) {
+template <typename T>
+struct L2Distance : public LpDistance<T> {
+    float operator()(const vector<T>& a, const vector<T>& b) {
         if(a.size() != b.size()) {
             throw string(cDifferentSizes);
         }
@@ -60,14 +58,11 @@ struct L2Distance : public LpDistance {
         }
         return sqrt(d);
     }
-    LpDistance& assign(const LpDistance& lpDistance) {
-        *this = dynamic_cast<const L2Distance&>(lpDistance);
-        return *this;
-    }
 };
 
-struct L2DistanceNan : public LpDistance {
-    float operator()(const vector<float>& a, const vector<float>& b) {
+template <typename T>
+struct L2DistanceNan : public LpDistance<T> {
+    float operator()(const vector<T>& a, const vector<T>& b) {
         if(a.size() != b.size()) {
             throw string(cDifferentSizes);
         }
@@ -80,18 +75,19 @@ struct L2DistanceNan : public LpDistance {
         }
         return sqrt(d);
     }
-    LpDistance& assign(const LpDistance& lpDistance) {
-        *this = dynamic_cast<const L2DistanceNan&>(lpDistance);
-        return *this;
-    }
 };
 
-struct L2DistanceNanIndexed : public LpDistance {
+template <typename T>
+struct L2DistanceNanIndexed : public LpDistance<T> {
     L2DistanceNanIndexed(const vector<float>& distance): _distance(distance) {
     }
     L2DistanceNanIndexed(const L2DistanceNanIndexed& l2DistanceNanIndexed): _distance(l2DistanceNanIndexed._distance) {
     }
-    float operator()(const vector<float>& a, const vector<float>& b) {
+    float operator()(const vector<T>& a, const vector<T>& b) {
+        //Function f("message");
+        //f("indexed");
+        //f(a.size());
+        //f(b.size());
         if(a.size() != _distance.size() || b.size() != _distance.size()) {
             throw string(cDifferentSizes);
         }
@@ -104,13 +100,27 @@ struct L2DistanceNanIndexed : public LpDistance {
         }
         return sqrt(d);
     }
-    LpDistance& assign(const LpDistance& lpDistance) {
-        *this = dynamic_cast<const L2DistanceNanIndexed&>(lpDistance);
-        return *this;
-    }
     vector<float> _distance;
 };
 
+template <>
+struct L1Distance<bool> : public LpDistance<bool> {
+    float operator()(const vector<bool>& a, const vector<bool>& b) {
+        if(a.size() != b.size()) {
+            throw string(cDifferentSizes);
+        }
+        float d = 0.0;
+        for(int i = 0; i < a.size(); i++) {
+            if(a[i] != b[i])
+            {
+                d += 1.0;
+            }
+        }
+        return d;
+    }
+};
+
+template <typename T>
 class VpTreeData {
 public:
     VpTreeData() {
@@ -119,36 +129,45 @@ public:
     }
     
     virtual vector<float> getNumberVector(int i) = 0;
+    virtual vector<T>& getReferenceNumberVector(int i) = 0;
     virtual int getSize() = 0;
 };
 
-class VpGenerativeData : public VpTreeData {
+template <typename T>
+class VpGenerativeData : public VpTreeData<T> {
 public:
-    VpGenerativeData(GenerativeData& generativeData): _generativeData(&generativeData) {}
-    VpGenerativeData(const VpGenerativeData& vpGenerativeData): _generativeData(vpGenerativeData._generativeData) {
+    VpGenerativeData(GenerativeData& generativeData): _pGenerativeData(&generativeData) {}
+    VpGenerativeData(const VpGenerativeData& vpGenerativeData): _pGenerativeData(vpGenerativeData._generativeData) {
     }
-    virtual VpTreeData& assign(const VpTreeData& vpTreeData) {
+    virtual VpTreeData<T>& assign(const VpTreeData<T>& vpTreeData) {
         *this = dynamic_cast<const VpGenerativeData&>(vpTreeData);
         return *this;
     }
     
     virtual vector<float> getNumberVector(int i) {
-        return  _generativeData->getNormalizedNumberVector(i);
+        return _pGenerativeData->getNormalizedNumberVector(i);
+    }
+    virtual vector<T>& getReferenceNumberVector(int i) {
+        return  _pGenerativeData->getNormalizedNumberVectorReference(i);
     }
     virtual int getSize() {
-        return _generativeData->getNormalizedSize();  
+        return _pGenerativeData->getNormalizedSize();
     }
     
 private:
-    GenerativeData* _generativeData;
+    GenerativeData* _pGenerativeData;
 };
 
-class VpIndexGenerativeData : public VpTreeData {
+template <typename T>
+class VpIndexGenerativeData : public VpTreeData<T> {
 public:
     VpIndexGenerativeData(GenerativeData& generativeData, vector<int>& indexVector): _generativeData(generativeData), _indexVector(indexVector) {}
     
     virtual vector<float> getNumberVector(int i) {
         return  _generativeData.getNormalizedNumberVector(_indexVector[i]);
+    }
+    virtual vector<T>& getReferenceNumberVector(int i) {
+        return _generativeData.getNormalizedNumberVectorReference(_indexVector[i]);
     }
     virtual int getSize() {
         return _indexVector.size();
@@ -159,29 +178,26 @@ private:
     vector<int> _indexVector;
 };
 
+template <typename T>
 struct Distance {
-    Distance(VpTreeData& vpTreeData, LpDistance& lpDistance): _vpTreeData(vpTreeData), _lpDistance(lpDistance) {}
+    Distance(VpTreeData<T>& vpTreeData, LpDistance<T>& lpDistance): _vpTreeData(vpTreeData), _lpDistance(lpDistance) {}
     float operator()(const int& a, const int& b) {
-        vector<float> aNumberVector;
-        vector<float> bNumberVector;
-        aNumberVector = _vpTreeData.getNumberVector(a);
-        bNumberVector = _vpTreeData.getNumberVector(b);
+        vector<T>& aNumberVector = _vpTreeData.getReferenceNumberVector(a);
+        vector<T>& bNumberVector = _vpTreeData.getReferenceNumberVector(b);
         return _lpDistance(aNumberVector, bNumberVector);
     }
   
-    VpTreeData& _vpTreeData;
-    LpDistance& _lpDistance;
+    VpTreeData<T>& _vpTreeData;
+    LpDistance<T>& _lpDistance;
 };
 
+template <typename T>
 struct VpDistance {
-    VpDistance(VpTreeData& vpTreeData, int index, LpDistance& lpDistance): _vpTreeData(vpTreeData), _index(index), _lpDistance(lpDistance) {}
+    VpDistance(VpTreeData<T>& vpTreeData, int index, LpDistance<T>& lpDistance): _vpTreeData(vpTreeData), _index(index), _lpDistance(lpDistance) {}
     bool operator()(const int& a, const int& b) {
-        vector<float> aNumberVector;
-        vector<float> bNumberVector;
-        vector<float> cNumberVector;
-        aNumberVector = _vpTreeData.getNumberVector(a);
-        bNumberVector = _vpTreeData.getNumberVector(b);
-        cNumberVector = _vpTreeData.getNumberVector(_index);
+        vector<T>& aNumberVector = _vpTreeData.getReferenceNumberVector(a);
+        vector<T>& bNumberVector = _vpTreeData.getReferenceNumberVector(b);
+        vector<T>& cNumberVector = _vpTreeData.getReferenceNumberVector(_index);
         if(_lpDistance(aNumberVector, cNumberVector) < _lpDistance(bNumberVector, cNumberVector)) {
             return true;
         } else {
@@ -189,9 +205,9 @@ struct VpDistance {
         }
     }
 
-    VpTreeData& _vpTreeData;
+    VpTreeData<T>& _vpTreeData;
     int _index;
-    LpDistance& _lpDistance;
+    LpDistance<T>& _lpDistance;
 };
 
 class VpElement {
@@ -222,11 +238,11 @@ public:
         return getDistance() < vpElement.getDistance();
     }
     
-    void write3(ofstream& os) {
+    void write(ofstream& os) {
         InOut::Write(os, _index);
         InOut::Write(os, _distance);
     }
-    void read3(ifstream& is) {
+    void read(ifstream& is) {
         InOut::Read(is, _index);
         InOut::Read(is, _distance);
     }
@@ -290,11 +306,12 @@ private:
 	VpNode* _pOutVpNode;
 };
 
+template <typename T>
 class VpTree {
 public:
     VpTree(): _pVpNode(0), _pVpTreeData(0), _tau(numeric_limits<float>::max()), _pProgress(0), _pLpDistance(0), _pG(new mt19937(_rd())), _pR(0), _pGd(0) {
     }
-    VpTree(VpTreeData* pVpTreeData, LpDistance* pLpDistance, Progress* pProgress): _pVpNode(0), _pVpTreeData(pVpTreeData), _tau(numeric_limits<float>::max()), _pProgress(pProgress), _pLpDistance(pLpDistance), _pG(new mt19937(_rd())), _pR(0), _pGd(0) {
+    VpTree(VpTreeData<T>* pVpTreeData, LpDistance<T>* pLpDistance, Progress* pProgress): _pVpNode(0), _pVpTreeData(pVpTreeData), _tau(numeric_limits<float>::max()), _pProgress(pProgress), _pLpDistance(pLpDistance), _pG(new mt19937(_rd())), _pR(0), _pGd(0) {
     }
     ~VpTree() {
         delete _pVpNode;
@@ -316,16 +333,18 @@ public:
         pVpNode->setIndex(lower);
     
         if(upper - lower > 1) {
-            int i = (int)((float)(*_pR)(*_pGd) / (float)(_pVpTreeData->getSize() - 1) * (float)(upper - lower - 1)) + lower;
+            //int i = (int)((float)(*_pR)(*_pGd) / (float)(_pVpTreeData->getSize() - 1) * (float)(upper - lower - 1)) + lower;
+            uniform_int_distribution<int> uid(lower, upper - 1);
+            int i = uid(*_pGd);
             
             swap(_indexVector[lower], _indexVector[i]);
             int median = (upper + lower) / 2;
             nth_element(_indexVector.begin() + lower + 1,
                  _indexVector.begin() + median,
                 _indexVector.begin() + upper,
-                VpDistance(*_pVpTreeData, _indexVector[lower], *_pLpDistance));
+                VpDistance<T>(*_pVpTreeData, _indexVector[lower], *_pLpDistance));
           
-            pVpNode->setThreshold(Distance(*_pVpTreeData, *_pLpDistance).operator()(_indexVector[lower], _indexVector[median]));
+            pVpNode->setThreshold(Distance<T>(*_pVpTreeData, *_pLpDistance).operator()(_indexVector[lower], _indexVector[median]));
             pVpNode->setIndex(lower);
             pVpNode->setInVpNode(build(lower + 1, median));
             pVpNode->setOutVpNode(build(median, upper));
@@ -334,7 +353,7 @@ public:
     
         return pVpNode;
     }
-    void build(VpTreeData* pVpTreeData, LpDistance* pLpDistance, Progress* pProgress) {
+    void build(VpTreeData<T>* pVpTreeData, LpDistance<T>* pLpDistance, Progress* pProgress) {
         delete _pVpNode;
         
         _pVpTreeData = pVpTreeData;
@@ -347,7 +366,8 @@ public:
             _indexVector[i] = i;
         }
         delete _pGd;
-        _pGd = new default_random_engine(30);
+        //_pGd = new default_random_engine(30);
+        _pGd = new default_random_engine(1);
         delete _pR;
         _pR = new uniform_int_distribution<int>(0, _pVpTreeData->getSize() - 1);
         _pVpNode = build(0, _indexVector.size());
@@ -364,26 +384,26 @@ public:
         }
     }
   
-    void search(const vector<float>& target, int kDistances, int k, vector<VpElement>& nearestNeighbours) {
+    void search(const vector<T>& target, int kDistances, int k, vector<VpElement>& nearestNeighbors) {
         priority_queue<VpElement> priorityQueue;
         _tau = numeric_limits<float>::max();
         _unique.clear();
         search(_pVpNode, target, kDistances, k, priorityQueue);
         
-        nearestNeighbours.clear();
+        nearestNeighbors.clear();
         while(!priorityQueue.empty()) {
-            nearestNeighbours.push_back(priorityQueue.top());
+            nearestNeighbors.push_back(priorityQueue.top());
             priorityQueue.pop();
         }
-        reverse(nearestNeighbours.begin(), nearestNeighbours.end());
+        reverse(nearestNeighbors.begin(), nearestNeighbors.end());
     }
 
-    void search(VpNode* pVpNode, const vector<float>& target, int kDistances, int k, priority_queue<VpElement>& priorityQueue) {
+    void search(VpNode* pVpNode, const vector<T>& target, int kDistances, int k, priority_queue<VpElement>& priorityQueue) {
         if(pVpNode == 0) {
             return;
         }
         
-        vector<float> numberVector = _pVpTreeData->getNumberVector(_indexVector[pVpNode->getIndex()]);
+        vector<T>& numberVector = _pVpTreeData->getReferenceNumberVector(_indexVector[pVpNode->getIndex()]);
         float d = (*_pLpDistance)(numberVector, target);
         if(d <= _tau) {
             _unique.insert(d);
@@ -415,12 +435,13 @@ public:
             }
         }
     }
-    void linearSearch(const vector<float>& target, int kDistances, int k, vector<VpElement>& nearestNeighbours) {
+    void linearSearch(const vector<T>& target, int kDistances, int k, vector<VpElement>& nearestNeighbors) {
         priority_queue<VpElement> priorityQueue;
         float tau = numeric_limits<float>::max();
         _unique.clear();
+        
         for(int i = 0; (int)i < _pVpTreeData->getSize(); i++) {
-            vector<float> numberVector = _pVpTreeData->getNumberVector(i);
+            vector<T>& numberVector = _pVpTreeData->getReferenceNumberVector(i);
             float d = (*_pLpDistance)(numberVector, target);
             if(d <= _tau) {
                 _unique.insert(d);
@@ -438,28 +459,29 @@ public:
                 }
             }
         }
-        nearestNeighbours.clear();
+        
+        nearestNeighbors.clear();
         while(!priorityQueue.empty()) {
-            nearestNeighbours.push_back(priorityQueue.top());
+            nearestNeighbors.push_back(priorityQueue.top());
             priorityQueue.pop();
         }
-        reverse(nearestNeighbours.begin(), nearestNeighbours.end());
+        reverse(nearestNeighbors.begin(), nearestNeighbors.end());
     }
    
-    VpTreeData& getVpTreeData() {
+    VpTreeData<T>& getVpTreeData() {
         return *_pVpTreeData;
     }
-    LpDistance& getLpDistance() {
+    LpDistance<T>& getLpDistance() {
         return *_pLpDistance;
     }
     
 private:
     vector<int> _indexVector;
     VpNode* _pVpNode;
-    VpTreeData* _pVpTreeData;
+    VpTreeData<T>* _pVpTreeData;
     float _tau;
     Progress* _pProgress;
-    LpDistance* _pLpDistance;
+    LpDistance<T>* _pLpDistance;
     
     random_device _rd;
     mt19937* _pG;

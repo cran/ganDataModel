@@ -49,11 +49,6 @@ public:
                 pNumberColumn->setMax(fMax);
                 pNumberColumn->setMin(fMin);
             }
-            
-            //Function f("message");
-            //f("norm");
-            //f(pNumberColumn->getMax());
-            //f(pNumberColumn->getMin());
         
             pNumberColumn->getNormalizedValueVector().resize(pNumberColumn->getValueVector().size(), 0);
             for(int j = 0; j < (int)pNumberColumn->getValueVector().size(); j++) {
@@ -64,7 +59,6 @@ public:
                             (pNumberColumn->getMax() - pNumberColumn->getMin());
                     } else {
                         if(pNumberColumn->getMax() > 0) {
-                            //normalizedNumber = pNumberColumn->getMax();
                             normalizedNumber = 1;
                         }
                     }
@@ -74,7 +68,6 @@ public:
                             log(pNumberColumn->getMax() - pNumberColumn->getMin() + 1);
                     } else {
                         if(pNumberColumn->getMax() > 0) {
-                            //normalizedNumber = pNumberColumn->getMax();
                             normalizedNumber = 1;
                         }
                     }
@@ -111,9 +104,6 @@ public:
             return number;    
         }
         
-        //Function f("message");
-        //f("normalized");
-            
         Column::COLUMN_TYPE type = pColumn->getColumnType();
         if(type == Column::NUMERICAL) {
             NumberColumn* pNumberColumn = dynamic_cast<NumberColumn*>(pColumn);
@@ -134,7 +124,6 @@ public:
                     normalizedNumber = (number - pNumberColumn->getMin()) / (pNumberColumn->getMax() - pNumberColumn->getMin());
                 } else {
                     if(pNumberColumn->getMax() > 0) {
-                        //normalizedNumber = pNumberColumn->getMax();
                         normalizedNumber = 1;
                     }
                 }
@@ -142,12 +131,8 @@ public:
                 if(pNumberColumn->getMax() - pNumberColumn->getMin() > 0) {
                     normalizedNumber = log(number - pNumberColumn->getMin() + 1) /
                         log(pNumberColumn->getMax() - pNumberColumn->getMin() + 1);
-                    //f(normalizedNumber);
-                    //f(pNumberColumn->getMax());
-                    //f(pNumberColumn->getMin());
                 } else {
                     if(pNumberColumn->getMax() > 0) {
-                        //normalizedNumber = pNumberColumn->getMax();
                         normalizedNumber = 1;
                     }
                 }
@@ -165,17 +150,11 @@ public:
             NumberColumn* pNumberColumn = dynamic_cast<NumberColumn*>(pColumn);
             NumberColumn::SCALE_TYPE scaleType = pNumberColumn->getScaleType();
         
-            //Function f("message");
-            //f("denormalized");
-        
             float denormalizedNumber;
             if(scaleType == Column::LINEAR) {
                 denormalizedNumber = pNumberColumn->getMin() + (pNumberColumn->getMax() - pNumberColumn->getMin()) * number;
             } else if(scaleType == NumberColumn::LOGARITHMIC) {
                 denormalizedNumber = pNumberColumn->getMin() - 1 + exp(number * log(pNumberColumn->getMax() - pNumberColumn->getMin() + 1));
-                //f(denormalizedNumber);
-                //f(pNumberColumn->getMax());
-                //f(pNumberColumn->getMin());
             } else {
                 throw cInvalidScaleType;
             }

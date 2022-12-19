@@ -566,6 +566,8 @@ public:
 	    }
 	  
 	    readWithoutTypeId(is);
+	    
+	    buildNormalizedNumberVectorVector();
 	}
     void readWithoutTypeId(ifstream& is) {
         InOut::Read(is, _version);
@@ -606,6 +608,16 @@ public:
     NumberColumn* getDensityVector() {
         return _pDensityVector;
     }
+    
+    void buildNormalizedNumberVectorVector() {
+        _numberVectorVector.resize(getNormalizedSize());
+        for(int i = 0; i < getNormalizedSize(); i++) {
+            _numberVectorVector[i] = getNormalizedNumberVector(i);
+        }
+    }
+    vector<float>& getNormalizedNumberVectorReference(int i) {
+        return _numberVectorVector[i];
+    }
 
 protected:
 	random_device _rd;
@@ -621,6 +633,7 @@ protected:
 	vector<Column*> _columnVector;
 	
 	NumberColumn* _pDensityVector;
+	vector<vector<float>> _numberVectorVector;
 };
 
 #endif

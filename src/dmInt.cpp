@@ -22,20 +22,19 @@ namespace dmInt {
   
     int batchSize = 256;
     int maxSize = batchSize * 50000;
-    int buildGraphIterations = 5;
-    int volumeElementSubspaceMaxSize = 1000;
-    int minSubspaceSize = 1000;
+    int buildGraphIterations = 4;
+    int minMetricSubspaceSize = 1000;
     
-    int nNearestNeighborDistances = 4;
-    int nNearestNeighbours = 128;
+    int nNearestNeighborDistances = 8;
+    int nNearestNeighbors = 256;
     
-    int nSubspaceNearestNeighborDistances = 8;
-    int nSubspaceNearestNeighbours = 8;
+    int nMetricSubspaceNearestNeighborDistances = 8;
+    int nMetricSubspaceNearestNeighbors = 8;
   
     const string cMaxSizeExceeded = "Max size of generative data exceeded";
 }
 
-vector<int> randomIndicesWithoutReplacement(int size, float percent) {
+vector<int> randomIndicesWithoutReplacement(int size, float percent, int seed = -1) {
     vector<int> indices(size);
     for(int i = 0; i < indices.size(); i++) {
         indices[i] = i;
@@ -44,6 +43,9 @@ vector<int> randomIndicesWithoutReplacement(int size, float percent) {
     vector<int> randomIndices;
     random_device rd;
     mt19937 mt(rd());
+    if(seed > 0) {
+        mt.seed(seed);
+    }
   
     int n = round((float)size * percent / 100);
     for(int i = 0; i < n; i++) {
@@ -431,17 +433,17 @@ std::vector<std::vector<float>> dmGetEvaluateCopyDataSourceNormalizedData(int ro
 
 // [[Rcpp::export]]
 std::vector<float> dmGetEvaluateCopyDataSourceDenormalizedData(int row, int rowCount) {
-  try {
-    if(dmInt::pEvaluateCopyDataSource == 0) {
-      throw string("No evaluate data source");
-    }
+    try {
+        if(dmInt::pEvaluateCopyDataSource == 0) {
+            throw string("No evaluate data source");
+        }
     
-    return dmInt::pEvaluateCopyDataSource->getDenormalizedData(row - 1, rowCount);
-  } catch (const string& e) {
-    ::Rf_error(e.c_str());
-  } catch(...) {
-    ::Rf_error("C++ exception (unknown reason)");
-  }
+        return dmInt::pEvaluateCopyDataSource->getDenormalizedData(row - 1, rowCount);
+    } catch (const string& e) {
+        ::Rf_error(e.c_str());
+    } catch(...) {
+        ::Rf_error("C++ exception (unknown reason)");
+    }
 }
 
 // [[Rcpp::export]]
@@ -624,8 +626,7 @@ void dmBuildVolumeElementGraph() {
             throw string("No volume element tree");
         }
     
-        dmInt::pVolumeElementGraph->buildVolumeElementGraphIterative(dmInt::nNearestNeighborDistances, dmInt::nNearestNeighbours, dmInt::buildGraphIterations, true, dmInt::pProgress);
-        dmInt::pVolumeElementGraph->buildVolumeElementGraphElementSubspace(dmInt::nNearestNeighbours, dmInt::nNearestNeighbours, dmInt::volumeElementSubspaceMaxSize, false);
+        dmInt::pVolumeElementGraph->buildVolumeElementGraphIterative(dmInt::nNearestNeighborDistances, dmInt::nNearestNeighbors, dmInt::buildGraphIterations, true, dmInt::pProgress);
     } catch (const string& e) {
         ::Rf_error(e.c_str());
     } catch(...) {
@@ -659,6 +660,8 @@ void dmAddVolumeElementGraph() {
             dmInt::pDataModel->getVolumeElementGraphs()[levelIndex] = *dmInt::pVolumeElementGraph;          
         }
         
+        dmInt::pDataModel->buildMetricSubspaceRelation();
+        
         delete dmInt::pVolumeElementGraph;
         dmInt::pVolumeElementGraph = 0;
     } catch (const string& e) {
@@ -669,7 +672,7 @@ void dmAddVolumeElementGraph() {
 }
 
 // [[Rcpp::export]]
-int dmBuildSubspacesSub() {
+int dmBuildMetricSubspacesSub() {
     try {
         if(dmInt::pGenerativeData == 0) {
             throw string("No generative data");
@@ -679,7 +682,7 @@ int dmBuildSubspacesSub() {
             throw string("No volume element graoh");
         }
     
-        int c = dmInt::pVolumeElementGraph->buildSubspaces(dmInt::minSubspaceSize);
+        int c = dmInt::pVolumeElementGraph->buildMetricSubspaces(dmInt::minMetricSubspaceSize);
         return c;
     } catch (const string& e) {
         ::Rf_error(e.c_str());
@@ -715,7 +718,7 @@ std::vector<std::vector<float>> dmGetGenerativeDataRandom(float percent) {
 }
 
 // [[Rcpp::export]]
-std::vector<float> dmGetSubspaceDenormalizedGenerativeData(float level, int subspace, float percent, bool boundary = false) {
+std::vector<float> dmGetMetricSubspaceDenormalizedGenerativeData(float level, int metricSubspaceIndex, float percent, bool boundary = false) {
     try {
         if(dmInt::pGenerativeData == 0) {
             throw string("No generative data");
@@ -727,35 +730,42 @@ std::vector<float> dmGetSubspaceDenormalizedGenerativeData(float level, int subs
         int levelIndex = dmInt::pDataModel->getLevelIndex(level);
         VolumeElementGraph& volumeElementGraph = dmInt::pDataModel->getVolumeElementGraphs()[levelIndex];
         
-        int positiveSubspaceIndex = subspace - 1;
-        if(positiveSubspaceIndex < 0 || positiveSubspaceIndex >= (int)volumeElementGraph.getPositiveVolumeElementSubspaceIndices().size()) {
-            throw string(cInvalidIndex);
-        }
-        int subspaceIndex = volumeElementGraph.getPositiveVolumeElementSubspaceIndices()[positiveSubspaceIndex];
+        vector<int> metricSubspaceGenerativeDataIndices;
+        metricSubspaceGenerativeDataIndices = volumeElementGraph.getGenerativeDataVolumeElementIndices(metricSubspaceIndex - 1, boundary);
+        vector<int> randomMetricSubspaceGenerativeDataIndices = randomIndicesWithoutReplacement(metricSubspaceGenerativeDataIndices.size(), percent);
         
-        vector<int> elementSubspaceGenerativeDataIndices;
-        vector<int>& elementSubspaceIndices = volumeElementGraph.getVolumeElementSubspaces()[subspaceIndex].getElementSubspaceIndices();
-      
-        for(int i = 0; i < (int)elementSubspaceIndices.size(); i++) {
-            int elementSubspaceIndex = elementSubspaceIndices[i];
-            for(int j = 0; j < (int)volumeElementGraph.getVolumeElementElementSubspaces()[elementSubspaceIndex].getVolumeElementIndices().size(); j++) {
-                int k = volumeElementGraph.getVolumeElementElementSubspaces()[elementSubspaceIndex].getVolumeElementIndices()[j]; 
-                vector<int> vp = volumeElementGraph.getVolumeElements()[k].getGenerativeDataIndices();
-                if(!boundary || (boundary && volumeElementGraph.getVolumeElements()[k].isBoundaryElement())) {
-                    elementSubspaceGenerativeDataIndices.insert(elementSubspaceGenerativeDataIndices.end(), vp.begin(), vp.end());
-                }
-            }
-        }
-        vector<int> generativeDataIndices = randomIndicesWithoutReplacement(elementSubspaceGenerativeDataIndices.size(), percent);
-        
-        vector<float> subspaceData;
-        for(int i = 0; i < (int)generativeDataIndices.size(); i++) {
-          int index = elementSubspaceGenerativeDataIndices[generativeDataIndices[i]];
-          vector<float> denormalizedNumberVector = dmInt::pGenerativeData->getDenormalizedNumberVector(index);
-          subspaceData.insert(subspaceData.end(), denormalizedNumberVector.begin(), denormalizedNumberVector.end());
+        vector<float> metricSubspaceData;
+        for(int i = 0; i < (int)randomMetricSubspaceGenerativeDataIndices.size(); i++) {
+            int index = metricSubspaceGenerativeDataIndices[randomMetricSubspaceGenerativeDataIndices[i]];
+            vector<float> denormalizedNumberVector = dmInt::pGenerativeData->getDenormalizedNumberVector(index);
+            metricSubspaceData.insert(metricSubspaceData.end(), denormalizedNumberVector.begin(), denormalizedNumberVector.end());
         }
         
-        return subspaceData;
+        return metricSubspaceData;
+    } catch (const string& e) {
+        ::Rf_error(e.c_str());
+    } catch(...) {
+        ::Rf_error("C++ exception (unknown reason)");
+    }
+}
+
+// [[Rcpp::export]]
+std::vector<int> dmGetMetricSubspaceIndices(float level, std::vector<std::string> labels) {
+    try {
+        if(dmInt::pGenerativeData == 0) {
+            throw string("No generative data");
+        }
+        if(dmInt::pDataModel == 0) {
+            throw string("No data model");
+        }
+    
+        vector<int> metricSubspacesIndices;
+        metricSubspacesIndices = dmInt::pDataModel->getMetricSubspaceIndices(level, labels);
+        for(int i = 0; i < (int)metricSubspacesIndices.size(); i++) {
+            metricSubspacesIndices[i] += 1;
+        }
+    
+        return metricSubspacesIndices;
     } catch (const string& e) {
         ::Rf_error(e.c_str());
     } catch(...) {
@@ -852,9 +862,9 @@ float dmGetMin(int i) {
     }
 }
 
-//' Get levels for subspaces
+//' Get levels for metric subspaces
 //'
-//' Get levels for subspaces in a data model.
+//' Get levels for metric subspaces in a data model.
 //'
 //' @return Vector of levels
 //' @export
@@ -878,27 +888,38 @@ std::vector<float> dmGetLevels() {
     }
 }
 
-//' Get number of subspaces for a level
+//' Get metric subspace properties for a level
 //'
-//' Get number of subspaces in a data model for a level.
+//' Get properties of metric subspaces in a data model for a level.
 //'
-//' @param level Level
+//' @param level Level for metric subspaces
 //'
-//' @return Number of subspaces
+//' @return List of list containing label and size of contained generative data for metric subspaces
 //' @export
 //'
 //' @examples
 //' \dontrun{
 //' dmRead("dm.bin", "gd.bin")
-//' dmGetNumberOfSubspaces(0.73)}
+//' dmGetMetricSubspaceProperties(0.73)}
 // [[Rcpp::export]]
-int dmGetNumberOfSubspaces(float level) {
+List dmGetMetricSubspaceProperties(float level) {
     try {
         if(dmInt::pDataModel == 0) {
             throw string("No data model");
         }
     
-        return dmInt::pDataModel->getNumberOfSubspaces(level) ;
+        List levelMetricSubspaceList;
+        vector<MetricSubspaceEntry>& metricSubspaceEntries = dmInt::pDataModel->getMetricSubspaceRelation().getMetricSubspaceEntries();
+        for(int i = 0; i < (int)metricSubspaceEntries.size(); i++) {
+            if(metricSubspaceEntries[i].getLevel() == level) {
+                List levelMetricSubspace;
+                levelMetricSubspace.insert(levelMetricSubspace.end(), metricSubspaceEntries[i].getLabel());
+                levelMetricSubspace.insert(levelMetricSubspace.end(), metricSubspaceEntries[i].getMetricSubspaceSize());
+          
+                levelMetricSubspaceList.insert(levelMetricSubspaceList.end(), levelMetricSubspace);
+            }
+        }
+        return levelMetricSubspaceList;    
     } catch (const string& e) {
         ::Rf_error(e.c_str());
     } catch(...) {
@@ -907,19 +928,13 @@ int dmGetNumberOfSubspaces(float level) {
 }
 
 // [[Rcpp::export]]
-void dmRemoveSubspacesSub(float level) {
+void dmRemoveMetricSubspacesSub(float level) {
     try {
         if(dmInt::pDataModel == 0) {
             throw string("No data model");
         }
-    
-        for(int i = 0; i < (int)dmInt::pDataModel->getVolumeElementGraphs().size(); i++) {
-            if(dmInt::pDataModel->getVolumeElementGraphs()[i].getLevel() == level) {
-                dmInt::pDataModel->getVolumeElementGraphs()[i] = dmInt::pDataModel->getVolumeElementGraphs()[dmInt::pDataModel->getVolumeElementGraphs().size() - 1];
-                dmInt::pDataModel->getVolumeElementGraphs().pop_back();
-                break;
-            }
-        }
+
+        dmInt::pDataModel->removeMetricSubspaces(level);
     } catch (const string& e) {
         ::Rf_error(e.c_str());
     } catch(...) {
@@ -953,7 +968,7 @@ std::vector<float> dmNormalizedDataRecord(List dataRecord) {
 }
 
 // [[Rcpp::export]]
-List dmGetSubspacesSub(List dataRecord, float level) {
+List dmGetMetricSubspacesSub(List dataRecord, float level) {
     try {
         if(dmInt::pGenerativeData == 0) {
             throw string("No generative data");
@@ -970,54 +985,159 @@ List dmGetSubspacesSub(List dataRecord, float level) {
  
         NormalizeData normalizeData;
         vector<float> normalizedNumberVector = normalizeData.getNormalizedNumberVector(dmInt::pDataModel->getDataSource() , numberVector);
- 
-        VpGenerativeData vpGenerativeData(*dmInt::pGenerativeData);
-        L2Distance l2Distance;
-        VpTree vpTree(&vpGenerativeData, &l2Distance, 0);
-        vector<VpElement> nearestNeighbours;
-        vpTree.linearSearch(normalizedNumberVector, dmInt:: nSubspaceNearestNeighborDistances, dmInt:: nSubspaceNearestNeighbours, nearestNeighbours);
- 
-        vector<pair<float, int>> levelSubspaces;
- 
-        Function f("message");
- 
+        
+        VpGenerativeData<float> vpGenerativeData(*dmInt::pGenerativeData);
+        L2Distance<float> l2Distance;
+        VpTree<float> vpTree(&vpGenerativeData, &l2Distance, 0);
+        vector<VpElement> nearestNeighbors;
+        vpTree.linearSearch(normalizedNumberVector, dmInt:: nMetricSubspaceNearestNeighborDistances, dmInt:: nMetricSubspaceNearestNeighbors, nearestNeighbors);
+        
+        vector<pair<float, string>> levelMetricSubspaces;
         vector<float> levels = dmInt::pDataModel->getLevels();
         for(int i = 0; i < (int)levels.size(); i++) {
             bool found = false;
-            for(int j = 0; j < nearestNeighbours.size(); j++) {
+            for(int j = 0; j < nearestNeighbors.size(); j++) {
                 int levelIndex = dmInt::pDataModel->getLevelIndex(levels[i]);
                 VolumeElementGraph& volumeElementGraph = dmInt::pDataModel->getVolumeElementGraphs()[levelIndex];
-                int volumeElementIndex = volumeElementGraph.getGenerativeDataVolumeElementIndices()[nearestNeighbours[j].getIndex()];
+                int volumeElementIndex = volumeElementGraph.getGenerativeDataVolumeElementIndices()[nearestNeighbors[j].getIndex()];
  
-                int elementSubspaceIndex = volumeElementGraph.getVolumeElements()[volumeElementIndex].getElementSubspaceIndex();
-                int subspaceIndex = volumeElementGraph.getVolumeElementElementSubspaces()[elementSubspaceIndex].getSubspaceIndex();
+                int metricSubspaceElementIndex = volumeElementGraph.getVolumeElements()[volumeElementIndex].getMetricSubspaceElementIndex();
+                int metricSubspaceIndex = volumeElementGraph.getMetricSubspaceElements()[metricSubspaceElementIndex].getMetricSubspaceIndex();
  
-                vector<int>::iterator positiveVolumeElementSubspaceIndicesIter;
-                positiveVolumeElementSubspaceIndicesIter = lower_bound(volumeElementGraph.getPositiveVolumeElementSubspaceIndices().begin(), volumeElementGraph.getPositiveVolumeElementSubspaceIndices().end(), subspaceIndex);
-                if(positiveVolumeElementSubspaceIndicesIter != volumeElementGraph.getPositiveVolumeElementSubspaceIndices().end() &&
-                    *positiveVolumeElementSubspaceIndicesIter == subspaceIndex &&
-                    level >= levels[i]) {
-                    int index = positiveVolumeElementSubspaceIndicesIter - volumeElementGraph.getPositiveVolumeElementSubspaceIndices().begin() + 1;
-                    levelSubspaces.push_back(make_pair(levels[i], index));
+                string label = dmInt::pDataModel->getMetricSubspaceLabel(levels[i], metricSubspaceIndex);
+                
+                if(level >= levels[i]) {
                     found = true;
+                    levelMetricSubspaces.push_back(make_pair(levels[i], label));
                     break;
                 }
             }
             if(!found) {
-                levelSubspaces.push_back(make_pair(levels[i], -1));
+                levelMetricSubspaces.push_back(make_pair(levels[i], ""));
             }
         }
-        
-        List levelSubspaceList;
-        for(int i = 0; i < (int)levelSubspaces.size(); i++) {
-            List levelSubspace;
-            levelSubspace.insert(levelSubspace.end(), levelSubspaces[i].first);
-            levelSubspace.insert(levelSubspace.end(), levelSubspaces[i].second);
+
+        List levelMetricSubspaceList;
+        for(int i = 0; i < (int)levelMetricSubspaces.size(); i++) {
+            List levelMetricSubspace;
+            levelMetricSubspace.insert(levelMetricSubspace.end(), levelMetricSubspaces[i].first);
+            levelMetricSubspace.insert(levelMetricSubspace.end(), levelMetricSubspaces[i].second);
             
-            levelSubspaceList.insert(levelSubspaceList.end(), levelSubspace);
+            levelMetricSubspaceList.insert(levelMetricSubspaceList.end(), levelMetricSubspace);
         }
         
-        return levelSubspaceList;
+        return levelMetricSubspaceList;
+    } catch (const string& e) {
+        ::Rf_error(e.c_str());
+    } catch(...) {
+        ::Rf_error("C++ exception (unknown reason)");
+    }
+}
+
+// [[Rcpp::export]]
+List dmMetricSubspaceLabelPointsSub(float lLevel, float rLevel, float percent, std::vector<int>& columnIndices, const std::vector<std::string>& lLabels) {
+    try {
+        if(dmInt::pGenerativeData == 0) {
+            throw string("No generative data");
+        }
+        if(dmInt::pDataModel == 0) {
+            throw string("No data model");
+        }
+        
+        vector<float> metricSubspacesData;
+        vector<string> metricSubspaceLabels;
+        vector<int> metricSubspaceIndices = dmInt::pDataModel->getMetricSubspaceIndices(lLevel, lLabels);
+        for(int i = 0; i < (int)metricSubspaceIndices.size(); i++) {
+            int metricSubspaceIndex = metricSubspaceIndices[i];
+            vector<int> generativeDataIndices = dmInt::pDataModel->getMetricSubspaceGenerativeDataIndices(lLevel, rLevel, metricSubspaceIndex);
+            
+            vector<int> randomIndices = randomIndicesWithoutReplacement(generativeDataIndices.size(), percent, lLevel * 100 + metricSubspaceIndex);
+            vector<int> r(randomIndices.size(), -1);
+            for(int j = 0; j < (int)randomIndices.size(); j++) {
+                r[j] = generativeDataIndices[randomIndices[j]];
+            }
+            
+            VpIndexGenerativeData<float> vpGenerativeData(*dmInt::pGenerativeData, r);
+            vector<float> d(dmInt::pGenerativeData->getDimension(), nan(""));
+            for(int j = 0; j < (int)columnIndices.size(); j++) {
+                d[columnIndices[j] - 1] = 1;
+            }
+            L2DistanceNanIndexed<float> distance(d);
+            VpTree<float> vpTree;
+            vpTree.build(&vpGenerativeData, &distance, 0);
+        
+            int levelIndex = dmInt::pDataModel->getLevelIndex(lLevel);
+            VolumeElementGraph& volumeElementGraph = dmInt::pDataModel->getVolumeElementGraphs()[levelIndex];
+            
+            vector<int> metricSubspaceGenerativeDataBoundaryIndices = volumeElementGraph.getGenerativeDataVolumeElementIndices(metricSubspaceIndex, true);
+            VpIndexGenerativeData<float> vpGenerativeDataBoundary(*dmInt::pGenerativeData, metricSubspaceGenerativeDataBoundaryIndices);
+            VpTree<float> vpBoundaryTree;
+            L2Distance<float> l2Distance;
+            vpBoundaryTree.build(&vpGenerativeDataBoundary, &l2Distance, 0);
+            
+            vector<int> metricSubspaceGenerativeDataIndices = volumeElementGraph.getGenerativeDataVolumeElementIndices(metricSubspaceIndex, false);
+            vector<int> randomMetricSubspaceIndices = randomIndicesWithoutReplacement(metricSubspaceGenerativeDataIndices.size(), percent, lLevel * 100 + metricSubspaceIndex);
+            float maxDistance = 0;
+            int maxIndex = -1;
+            for(int j = 0; j <(int)randomMetricSubspaceIndices.size(); j++) {
+                vector<float> numberVector = dmInt::pGenerativeData->getNormalizedNumberVector(metricSubspaceGenerativeDataIndices[randomMetricSubspaceIndices[j]]);
+                vector<VpElement> nearestNeighbors;
+                vpTree.search(numberVector, 1, 1, nearestNeighbors);
+                
+                vector<VpElement> nearestNeighborsBoundary;
+                vpBoundaryTree.search(numberVector, 1, 1, nearestNeighborsBoundary);
+                float minDistance = numeric_limits<float>::max();
+                if(nearestNeighbors.size() > 0) {
+                    if(minDistance > nearestNeighbors[0].getDistance()) {
+                        minDistance = nearestNeighbors[0].getDistance();
+                    }
+                }
+                if(nearestNeighborsBoundary.size() > 0) {
+                    if(minDistance > nearestNeighborsBoundary[0].getDistance()) {
+                        minDistance = nearestNeighborsBoundary[0].getDistance();
+                    }
+                }
+                if(minDistance > maxDistance) {
+                    maxDistance = minDistance;
+                    maxIndex = metricSubspaceGenerativeDataIndices[randomMetricSubspaceIndices[j]];
+                }
+            }
+            vector<float> denormalizedNumberVector;
+            if(maxIndex != -1) {
+                denormalizedNumberVector = dmInt::pGenerativeData->getDenormalizedNumberVector(maxIndex);
+            }
+            metricSubspacesData.insert(metricSubspacesData.end(), denormalizedNumberVector.begin(), denormalizedNumberVector.end());
+            
+            string label =  dmInt::pDataModel->getMetricSubspaceLabel(lLevel, metricSubspaceIndex);
+            metricSubspaceLabels.push_back(label);
+        }
+        
+        List metricSubspaceKeyPoints;
+        metricSubspaceKeyPoints.insert(metricSubspaceKeyPoints.end(), metricSubspacesData);
+        metricSubspaceKeyPoints.insert(metricSubspaceKeyPoints.end(), metricSubspaceLabels);
+        
+        return metricSubspaceKeyPoints;
+    } catch (const string& e) {
+        ::Rf_error(e.c_str());
+    } catch(...) {
+        ::Rf_error("C++ exception (unknown reason)");
+    }
+}
+
+// [[Rcpp::export]]
+std::vector<int> dmSortLevelIndices(std::vector<float>& levels) {
+    try {
+        vector<pair<float, int>> levelIndexPairs;
+        for(int i = 0; i < (int)levels.size(); i++) {
+            levelIndexPairs.push_back(make_pair(levels[i], i + 1));
+        }
+        sort(levelIndexPairs.begin(), levelIndexPairs.end());
+        
+        vector<int> sortedLevelIndices;
+        for(int i = 0; i < (int)levelIndexPairs.size(); i++) {
+            sortedLevelIndices.push_back(levelIndexPairs[i].second);
+        }
+        return sortedLevelIndices;
     } catch (const string& e) {
         ::Rf_error(e.c_str());
     } catch(...) {

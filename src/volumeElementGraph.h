@@ -8,7 +8,7 @@
 
 #include "generativeData.h"
 #include "volumeElement.h"
-#include "volumeElementSubspace.h"
+#include "metricSubspace.h"
 #include "vpTree.h"
 
 #define GD_RCPP
@@ -21,7 +21,8 @@ using namespace std;
 
 typedef vector<bool> VolumeElementConfiguration; 
 
-class VpVolumeElementConfigurations : public VpTreeData {
+template <typename T>
+class VpVolumeElementConfigurations : public VpTreeData<T> {
 public:
     VpVolumeElementConfigurations(vector<VolumeElement>& volumeElements): _volumeElements(volumeElements) {
         ;
@@ -32,6 +33,9 @@ public:
     }
     virtual vector<float> getNumberVector(int i) {
         return _volumeElements[i].getNumberVector();
+    }
+    virtual vector<T>& getReferenceNumberVector(int i) {
+        return _volumeElements[i].getVolumeElementConfiguration();
     }
     virtual int getSize() {
         return _volumeElements.size();  
@@ -44,7 +48,7 @@ private:
     vector<VolumeElement>& _volumeElements;
 };
 
-struct ElementSubspaceIndicesSizesCompare{
+struct SubspaceElementIndicesSizesCompare{
     bool operator()(const pair<int, int>& a, const pair<int, int>& b) {
         if(a.second > b.second) {
             return true;
@@ -80,11 +84,8 @@ public:
         _l1Distance = volumeElementGraph._l1Distance;
         _pVpVolumeElementConfigurations = 0;
         
-        _volumeElementElementSubspaces = volumeElementGraph._volumeElementElementSubspaces;
-        _volumeElementSubspaces= volumeElementGraph._volumeElementSubspaces;
-        
-        _positiveVolumeElementSubspaceIndices = volumeElementGraph._positiveVolumeElementSubspaceIndices;
-        _negativeVolumeElementSubspaceIndices = volumeElementGraph._negativeVolumeElementSubspaceIndices;
+        _metricSubspaceElements = volumeElementGraph._metricSubspaceElements;
+        _metricSubspaces= volumeElementGraph._metricSubspaces;
         
         _generativeDataVolumeElementIndices = volumeElementGraph._generativeDataVolumeElementIndices;
         
@@ -191,12 +192,12 @@ public:
         }
     }
     void buildVolumeElementTree(Progress* pProgress) {
-        _pVpVolumeElementConfigurations = new VpVolumeElementConfigurations(_volumeElements);
+        _pVpVolumeElementConfigurations = new VpVolumeElementConfigurations<bool>(_volumeElements);
         delete pProgress;
         pProgress = new Progress(_pVpVolumeElementConfigurations->getSize());
         delete _pVpTree;
-        _pVpTree = new VpTree();
-        _pVpTree->build(_pVpVolumeElementConfigurations, new L1Distance(), pProgress);
+        _pVpTree = new VpTree<bool>();
+        _pVpTree->build(_pVpVolumeElementConfigurations, new L1Distance<bool>(), pProgress);
     }
     bool isVolumeElementTreeBuilt() {
         if(_pVpTree != 0 && _pVpTree->isBuilt()) {
@@ -254,12 +255,12 @@ public:
             pProgress->setOffset(i * _volumeElements.size());
         }
     }
-    void buildVolumeElementGraphElementSubspace(int kDistances, int k, int maxSize, bool boundary = false) {
-        buildElementSubspaces();
-        for(int i = 0; i < (int)getVolumeElementElementSubspaces().size(); i++) {
-            if(getVolumeElementElementSubspaces()[i].getVolumeElementIndices().size() <= maxSize) {
-                for(int j = 0; j < getVolumeElementElementSubspaces()[i].getVolumeElementIndices().size(); j++) {
-                    int index = getVolumeElementElementSubspaces()[i].getVolumeElementIndices()[j];
+    void buildVolumeElementGraphMetricSubspaceElement(int kDistances, int k, int maxSize, bool boundary = false) {
+        buildMetricSubspaceElements();
+        for(int i = 0; i < (int)getMetricSubspaceElements().size(); i++) {
+            if(getMetricSubspaceElements()[i].getVolumeElementIndices().size() <= maxSize) {
+                for(int j = 0; j < getMetricSubspaceElements()[i].getVolumeElementIndices().size(); j++) {
+                    int index = getMetricSubspaceElements()[i].getVolumeElementIndices()[j];
                     buildVolumeElementGraph(index, kDistances, k, boundary);
                 }
             }
@@ -268,23 +269,25 @@ public:
     vector<VolumeElement>& getVolumeElements() {
         return _volumeElements;
     }
-    vector<VolumeElementElementSubspace>& getVolumeElementElementSubspaces() {
-        return _volumeElementElementSubspaces;
+    vector<MetricSubspaceElement>& getMetricSubspaceElements() {
+        return _metricSubspaceElements;
     }
-    vector<VolumeElementSubspace>& getVolumeElementSubspaces() {
-        return _volumeElementSubspaces;
+    vector<MetricSubspace>& getMetricSubspaces() {
+        return _metricSubspaces;
     }
-    vector<int>& getPositiveVolumeElementSubspaceIndices() {
-        return _positiveVolumeElementSubspaceIndices;
+    int getNumberOfMetricSubspaces() {
+      int numberOfMetricSubspaces = 0;
+      for(int i = 0; i < (int)getMetricSubspaces().size(); i++) {
+          if(getMetricSubspacePositve(i, true)) {
+              numberOfMetricSubspaces++;
+          }
+      }
+      return numberOfMetricSubspaces;
     }
-    vector<int>& getNegativeVolumeElementSubspaceIndices() {
-      return _negativeVolumeElementSubspaceIndices;
-    }
-    
     vector<VpElement> gedAdjacentVolumeElements(int index, int kDistances, int k) {
         vector<VpElement> nearestNeighbours;
         
-        vector<float> target = _volumeElements[index].getNumberVector();
+        vector<bool>& target = _volumeElements[index].getVolumeElementConfiguration();
         _pVpTree->search(target, kDistances, k, nearestNeighbours);
         vector<VpElement> adjacentElements;
         
@@ -297,7 +300,7 @@ public:
                 continue;
             }
             
-            vector<float> a = _volumeElements[nearestNeighbours[i].getIndex()].getNumberVector();
+            vector<bool>& a = _volumeElements[nearestNeighbours[i].getIndex()].getVolumeElementConfiguration();
             float da = nearestNeighbours[i].getDistance();
             bool adjacent = true;
             for(int j = 0; j < i; j++) {
@@ -307,7 +310,7 @@ public:
                 if(j == i) {
                     continue;
                 }
-                vector<float> b = _volumeElements[nearestNeighbours[j].getIndex()].getNumberVector();
+                vector<bool>& b = _volumeElements[nearestNeighbours[j].getIndex()].getVolumeElementConfiguration();
                 
                 float db = nearestNeighbours[j].getDistance();
                 if(da == db) {
@@ -327,23 +330,23 @@ public:
         return adjacentElements;
     }
 
-    VpTree* getVpTree() {
+    VpTree<bool>* getVpTree() {
         return _pVpTree;    
     }
     
-    VpVolumeElementConfigurations* getVpVolumeElementConfigurations() {
+    VpVolumeElementConfigurations<bool>* getVpVolumeElementConfigurations() {
         return _pVpVolumeElementConfigurations;
     }
     
-    void buildElementSubspacesLoop(int index, bool positive, int elementSubspaceIndex) {
+    void buildMetricSubspaceElementsLoop(int index, bool positive, int metricSubspaceElementIndex) {
         vector<int> stack;
         stack.push_back(index);
       
         while(!stack.empty()) {
             int i = stack.back();
             stack.pop_back();
-            if(_volumeElements[i].getElementSubspaceIndex() == -1) {
-                _volumeElements[i].setElementSubspaceIndex(elementSubspaceIndex);
+            if(_volumeElements[i].getMetricSubspaceElementIndex() == -1) {
+                _volumeElements[i].setMetricSubspaceElementIndex(metricSubspaceElementIndex);
                 for(int j = 0; j < (int)_volumeElements[i].getPositiveAdjacentVolumeElements().size(); j++) {
                     if(_volumeElements[_volumeElements[i].getPositiveAdjacentVolumeElements()[j].getIndex()].getPositive() == positive) {
                         stack.push_back(_volumeElements[i].getPositiveAdjacentVolumeElements()[j].getIndex());
@@ -358,33 +361,33 @@ public:
         }
     }
     
-    void buildElementSubspaces() {
+    void buildMetricSubspaceElements() {
         for(int i = 0; i < (int)_volumeElements.size(); i++) {
-            _volumeElements[i].setElementSubspaceIndex(-1);
+            _volumeElements[i].setMetricSubspaceElementIndex(-1);
         }
       
-        int elementSubspaceIndex = 0;
+        int metricSubspaceElementIndex = 0;
         for(int i = 0; i < (int)_volumeElements.size(); i++) {
-            if(_volumeElements[i].getElementSubspaceIndex() == -1) {
-                buildElementSubspacesLoop(i, _volumeElements[i].getPositive(), elementSubspaceIndex);
+            if(_volumeElements[i].getMetricSubspaceElementIndex() == -1) {
+                buildMetricSubspaceElementsLoop(i, _volumeElements[i].getPositive(), metricSubspaceElementIndex);
           
                 int c = 0;
                 do{
                     c = 0;
                     for(int j = i + 1; j < (int)_volumeElements.size(); j++) {
-                    if(_volumeElements[j].getElementSubspaceIndex() == -1 &&
+                    if(_volumeElements[j].getMetricSubspaceElementIndex() == -1 &&
                         _volumeElements[j].getPositive() == _volumeElements[i].getPositive()) {
                         for(int k = 0; k < (int)_volumeElements[j].getPositiveAdjacentVolumeElements().size(); k++) {
                             if(_volumeElements[_volumeElements[j].getPositiveAdjacentVolumeElements()[k].getIndex()].getPositive() == _volumeElements[i].getPositive() &&
-                            _volumeElements[_volumeElements[j].getPositiveAdjacentVolumeElements()[k].getIndex()].getElementSubspaceIndex() == elementSubspaceIndex) {
-                            buildElementSubspacesLoop(j, _volumeElements[i].getPositive(), elementSubspaceIndex);
+                            _volumeElements[_volumeElements[j].getPositiveAdjacentVolumeElements()[k].getIndex()].getMetricSubspaceElementIndex() == metricSubspaceElementIndex) {
+                            buildMetricSubspaceElementsLoop(j, _volumeElements[i].getPositive(), metricSubspaceElementIndex);
                             c++;
                         }
                     }
                     for(int k = 0; k < (int)_volumeElements[j].getNegativeAdjacentVolumeElements().size(); k++) {
                         if(_volumeElements[_volumeElements[j].getNegativeAdjacentVolumeElements()[k].getIndex()].getPositive() ==_volumeElements[i].getPositive() &&
-                            _volumeElements[_volumeElements[j].getNegativeAdjacentVolumeElements()[k].getIndex()].getElementSubspaceIndex() == elementSubspaceIndex) {
-                            buildElementSubspacesLoop(j, _volumeElements[i].getPositive(), elementSubspaceIndex);
+                            _volumeElements[_volumeElements[j].getNegativeAdjacentVolumeElements()[k].getIndex()].getMetricSubspaceElementIndex() == metricSubspaceElementIndex) {
+                            buildMetricSubspaceElementsLoop(j, _volumeElements[i].getPositive(), metricSubspaceElementIndex);
                             c++;
                                 }
                             }
@@ -392,134 +395,143 @@ public:
                     }
                 } while (c > 0);
           
-                elementSubspaceIndex++;
+                metricSubspaceElementIndex++;
             }
         }
       
-        _volumeElementElementSubspaces.clear();
-        _volumeElementElementSubspaces.resize(elementSubspaceIndex);
+        _metricSubspaceElements.clear();
+        _metricSubspaceElements.resize(metricSubspaceElementIndex);
         for(int i = 0; i < (int)_volumeElements.size(); i++) {
-            int elementSubspaceIndex = _volumeElements[i].getElementSubspaceIndex();
-            _volumeElementElementSubspaces[elementSubspaceIndex].getVolumeElementIndices().push_back(i);
+            int metricSubspaceElementIndex = _volumeElements[i].getMetricSubspaceElementIndex();
+            _metricSubspaceElements[metricSubspaceElementIndex].getVolumeElementIndices().push_back(i);
         }
     }
-    int buildSubspaces(int minSubspaceSize) {
-        buildElementSubspaces();
+    int buildMetricSubspaces(int minMetricSubspaceSize) {
+        buildMetricSubspaceElements();
         
-        _volumeElementSubspaces.clear();
+        _metricSubspaces.clear();
     
-        int subspaceIndex = 0;
+        int metricSubspaceIndex = 0;
         
-        vector<pair<int, int>> elementSubspaceIndicesSizes;
-        for(int i = 0; i < (int)_volumeElementElementSubspaces.size(); i++) {
-            int elementSubspaceSize = getVolueElementElementSubspaceSize(i);
-            if(elementSubspaceSize >= minSubspaceSize) {
-                elementSubspaceIndicesSizes.push_back(make_pair(i, elementSubspaceSize));
+        vector<pair<int, int>> metricSubspaceElementIndicesSizes;
+        for(int i = 0; i < (int)_metricSubspaceElements.size(); i++) {
+            int elementSubspaceSize = getMetricSubspaceElementSize(i);
+            if(elementSubspaceSize >= minMetricSubspaceSize) {
+                metricSubspaceElementIndicesSizes.push_back(make_pair(i, elementSubspaceSize));
             }
         }
         
-        _volumeElementSubspaces.resize(elementSubspaceIndicesSizes.size());
-        ElementSubspaceIndicesSizesCompare elementSubspaceIndicesSizesCompare;
-        sort(elementSubspaceIndicesSizes.begin(), elementSubspaceIndicesSizes.end(), elementSubspaceIndicesSizesCompare);
-        for(int i = 0; i < (int)elementSubspaceIndicesSizes.size(); i++) {
-            VolumeElementSubspace volumeElementSubspace;
-            volumeElementSubspace.getElementSubspaceIndices().push_back(elementSubspaceIndicesSizes[i].first);
-            _volumeElementSubspaces[i] = volumeElementSubspace;
+        _metricSubspaces.resize(metricSubspaceElementIndicesSizes.size());
+        SubspaceElementIndicesSizesCompare subspaceElementIndicesSizesCompare;
+        sort(metricSubspaceElementIndicesSizes.begin(), metricSubspaceElementIndicesSizes.end(), subspaceElementIndicesSizesCompare);
+        for(int i = 0; i < (int)metricSubspaceElementIndicesSizes.size(); i++) {
+            MetricSubspace volumeElementSubspace;
+            volumeElementSubspace.getMetricSubspaceElementIndices().push_back(metricSubspaceElementIndicesSizes[i].first);
+            _metricSubspaces[i] = volumeElementSubspace;
           
-            _volumeElementElementSubspaces[elementSubspaceIndicesSizes[i].first].setSubspaceIndex(subspaceIndex);
+            _metricSubspaceElements[metricSubspaceElementIndicesSizes[i].first].setMetricSubspaceIndex(metricSubspaceIndex);
           
-            subspaceIndex++;
+            metricSubspaceIndex++;
         }
         
-        for(int i = 0; i < (int)_volumeElementElementSubspaces.size(); i++) {
-            int elementSubspaceSize =  getVolueElementElementSubspaceSize(i);
-            if(elementSubspaceSize < minSubspaceSize) {
-                 set<int> adjacentElementSubspaceIndices = getAdjacentVolumeElementElementSubspaces(i);
+        for(int i = 0; i < (int)_metricSubspaceElements.size(); i++) {
+            int subspaceElementSize =  getMetricSubspaceElementSize(i);
+            if(subspaceElementSize < minMetricSubspaceSize) {
+                 set<int> adjacentElementSubspaceIndices = getAdjacentvolumeElementSubspaceElements(i);
     
                 if(adjacentElementSubspaceIndices.size() == 0) {
                     continue;
                 }
                 
-                vector<pair<int, int>> elementSubspaceIndicesSizes;
+                vector<pair<int, int>> metricSubspaceElementIndicesSizes;
                 for(set<int>::const_iterator iter =  adjacentElementSubspaceIndices.begin(); iter !=  adjacentElementSubspaceIndices.end(); ++iter) {
-                    elementSubspaceIndicesSizes.push_back(make_pair(*iter, getVolueElementElementSubspaceSize(*iter)));
+                    metricSubspaceElementIndicesSizes.push_back(make_pair(*iter, getMetricSubspaceElementSize(*iter)));
                 }
                 
-                ElementSubspaceIndicesSizesCompare elementSubspaceIndicesSizesCompare;
-                sort(elementSubspaceIndicesSizes.begin(), elementSubspaceIndicesSizes.end(), elementSubspaceIndicesSizesCompare);
+                SubspaceElementIndicesSizesCompare elementSubspaceIndicesSizesCompare;
+                sort(metricSubspaceElementIndicesSizes.begin(), metricSubspaceElementIndicesSizes.end(), elementSubspaceIndicesSizesCompare);
                 
-                if(elementSubspaceIndicesSizes[0].second < minSubspaceSize) {
+                if(metricSubspaceElementIndicesSizes[0].second < minMetricSubspaceSize) {
                     continue;
                 }
                 
-                int subspaceIndex = _volumeElementElementSubspaces[elementSubspaceIndicesSizes[0].first].getSubspaceIndex();
-                _volumeElementSubspaces[subspaceIndex].getElementSubspaceIndices().push_back(i);
-            }
-        };
-        
-        _positiveVolumeElementSubspaceIndices.clear();
-        for(int i = 0; i < (int)_volumeElementSubspaces.size(); i++) {
-            if(getSubspacePositve(i, true)) {
-                _positiveVolumeElementSubspaceIndices.push_back(i);
+                int subspaceIndex = _metricSubspaceElements[metricSubspaceElementIndicesSizes[0].first].getMetricSubspaceIndex();
+                _metricSubspaces[subspaceIndex].getMetricSubspaceElementIndices().push_back(i);
             }
         }
         
-        _negativeVolumeElementSubspaceIndices.clear();
-        for(int i = 0; i < (int)_volumeElementSubspaces.size(); i++) {
-            if(getSubspacePositve(i, false)) {
-                _negativeVolumeElementSubspaceIndices.push_back(i);
-            }
-        }
-        
-        return _volumeElementSubspaces.size();
+        return _metricSubspaces.size();
     }
-    set<int> getAdjacentVolumeElementElementSubspaces(int elementSubspaceIndex) {
-        set<int> adjacentVolumeElementElementSubspaceIndices;
-        vector<int>& volumeElementIndices = _volumeElementElementSubspaces[elementSubspaceIndex].getVolumeElementIndices();
+    set<int> getAdjacentvolumeElementSubspaceElements(int metricSubspaceElementIndex) {
+        set<int> adjacentVolumeElementSubspaceElementIndices;
+        vector<int>& volumeElementIndices = _metricSubspaceElements[metricSubspaceElementIndex].getVolumeElementIndices();
         for(int j = 0; j < volumeElementIndices.size(); j++) {
             int volumeElementIndex = volumeElementIndices[j];
             if(_volumeElements[volumeElementIndex].isBoundaryElement()) {
                 if(_volumeElements[volumeElementIndex].getPositive()) {
                     for(int k = 0; k < (int)_volumeElements[volumeElementIndex].getNegativeAdjacentVolumeElements().size(); k++) {
                         int adjacentVolumeElementIndex = _volumeElements[volumeElementIndex].getNegativeAdjacentVolumeElements()[k].getIndex();
-                        int adjacentElementSubspaceIndex = _volumeElements[adjacentVolumeElementIndex].getElementSubspaceIndex();
-                        adjacentVolumeElementElementSubspaceIndices.insert(adjacentElementSubspaceIndex);
+                        int adjacentElementSubspaceIndex = _volumeElements[adjacentVolumeElementIndex].getMetricSubspaceElementIndex();
+                        adjacentVolumeElementSubspaceElementIndices.insert(adjacentElementSubspaceIndex);
                     }
                 } else {
                     for(int k = 0; k < (int)_volumeElements[volumeElementIndex].getPositiveAdjacentVolumeElements().size(); k++) {
                         int adjacentVolumeElementIndex = _volumeElements[volumeElementIndex].getPositiveAdjacentVolumeElements()[k].getIndex();
-                        int adjacentElementSubspaceIndex = _volumeElements[adjacentVolumeElementIndex].getElementSubspaceIndex();
-                        adjacentVolumeElementElementSubspaceIndices.insert(adjacentElementSubspaceIndex);
+                        int adjacentElementSubspaceIndex = _volumeElements[adjacentVolumeElementIndex].getMetricSubspaceElementIndex();
+                        adjacentVolumeElementSubspaceElementIndices.insert(adjacentElementSubspaceIndex);
                     }
                 }
             }
         }
     
-        return adjacentVolumeElementElementSubspaceIndices;
+        return adjacentVolumeElementSubspaceElementIndices;
     }
-    int getVolueElementElementSubspaceSize(int elementSubspaceIndex) {
-        int elementSubspaceSize = 0;
-        vector<int>& volumeElementIndices = _volumeElementElementSubspaces[elementSubspaceIndex].getVolumeElementIndices();
+    int getMetricSubspaceElementSize(int metricSubspaceElementIndex) {
+        int metricSubspaceElementSize = 0;
+        vector<int>& volumeElementIndices = _metricSubspaceElements[metricSubspaceElementIndex].getVolumeElementIndices();
         for(int i = 0; i < (int)volumeElementIndices.size(); i++) {
-            elementSubspaceSize += _volumeElements[volumeElementIndices[i]].getGenerativeDataIndices().size();
+            metricSubspaceElementSize += _volumeElements[volumeElementIndices[i]].getGenerativeDataIndices().size();
         }
-        return elementSubspaceSize;
+        return metricSubspaceElementSize;
     }
-    bool getElemntSubspacePositve(int i, bool positive = true) {
-        if(_volumeElements[_volumeElementElementSubspaces[i].getVolumeElementIndices()[0]].getPositive() == positive) {
+    int getMetricSubspaceSize(int metricSubspaceIndex) {
+        int metricSubspaceSize = 0;
+        vector<int>& metricSubspaceElementIndices = _metricSubspaces[metricSubspaceIndex].getMetricSubspaceElementIndices();
+        for(int i = 0; i < (int)metricSubspaceElementIndices.size(); i++) {
+            metricSubspaceSize += getMetricSubspaceElementSize(metricSubspaceElementIndices[i]);
+        }
+        return metricSubspaceSize;
+    }
+    bool getMetricSubspaceElementPositve(int i, bool positive = true) {
+        if(_volumeElements[_metricSubspaceElements[i].getVolumeElementIndices()[0]].getPositive() == positive) {
             return true;
         } else {
             return false;
         }
     }
-    bool getSubspacePositve(int i, bool positive = true) {
-        VolumeElementSubspace& volumeElementSubspace = _volumeElementSubspaces[i];
-        int index = volumeElementSubspace.getElementSubspaceIndices()[0];
-        return getElemntSubspacePositve(index, positive);
+    bool getMetricSubspacePositve(int i, bool positive = true) {
+        MetricSubspace& metricSubspace = _metricSubspaces[i];
+        int index = metricSubspace.getMetricSubspaceElementIndices()[0];
+        return getMetricSubspaceElementPositve(index, positive);
     }
-    
     vector<int> getGenerativeDataVolumeElementIndices() {
         return _generativeDataVolumeElementIndices;
+    }
+    vector<int> getGenerativeDataVolumeElementIndices(int metricSubspaceIndex, bool boundary = false) {
+        vector<int> metricSubspaceGenerativeDataIndices;
+        vector<int>& metricSubspaceElementIndices = getMetricSubspaces()[metricSubspaceIndex].getMetricSubspaceElementIndices();
+    
+        for(int i = 0; i < (int)metricSubspaceElementIndices.size(); i++) {
+            int metricSubspaceElementIndex = metricSubspaceElementIndices[i];
+            for(int j = 0; j < (int)getMetricSubspaceElements()[metricSubspaceElementIndex].getVolumeElementIndices().size(); j++) {
+                int k = getMetricSubspaceElements()[metricSubspaceElementIndex].getVolumeElementIndices()[j]; 
+                vector<int> generativeDataIndices = getVolumeElements()[k].getGenerativeDataIndices();
+                if(!boundary || (boundary && getVolumeElements()[k].isBoundaryElement())) {
+                    metricSubspaceGenerativeDataIndices.insert(metricSubspaceGenerativeDataIndices.end(), generativeDataIndices.begin(), generativeDataIndices.end());
+                }
+            }
+        }
+        return metricSubspaceGenerativeDataIndices;
     }
     
     void write(ofstream& os) {
@@ -537,20 +549,17 @@ public:
             _volumeElements[i].write(os);
         }
         
-        size = _volumeElementElementSubspaces.size();
+        size = _metricSubspaceElements.size();
         InOut::Write(os, size);
-        for(int i = 0; i < (int)_volumeElementElementSubspaces.size(); i++) {
-            _volumeElementElementSubspaces[i].write(os);
+        for(int i = 0; i < (int)_metricSubspaceElements.size(); i++) {
+            _metricSubspaceElements[i].write(os);
         }
         
-        size = _volumeElementSubspaces.size();
+        size = _metricSubspaces.size();
         InOut::Write(os, size);
-        for(int i = 0; i < (int)_volumeElementSubspaces.size(); i++) {
-            _volumeElementSubspaces[i].write(os);
+        for(int i = 0; i < (int)_metricSubspaces.size(); i++) {
+            _metricSubspaces[i].write(os);
         }
-        
-        InOut::Write(os, _positiveVolumeElementSubspaceIndices);
-        InOut::Write(os, _negativeVolumeElementSubspaceIndices);
         
         InOut::Write(os, _generativeDataVolumeElementIndices);
     }
@@ -569,22 +578,19 @@ public:
             _volumeElements[i].read(is, dim);
         }
         
-        size = _volumeElementElementSubspaces.size();
+        size = _metricSubspaceElements.size();
         InOut::Read(is, size);
-        _volumeElementElementSubspaces.resize(size);
-        for(int i = 0; i < (int)_volumeElementElementSubspaces.size(); i++) {
-            _volumeElementElementSubspaces[i].read(is);
+        _metricSubspaceElements.resize(size);
+        for(int i = 0; i < (int)_metricSubspaceElements.size(); i++) {
+            _metricSubspaceElements[i].read(is);
         }
         
-        size = _volumeElementSubspaces.size();
+        size = _metricSubspaces.size();
         InOut::Read(is, size);
-        _volumeElementSubspaces.resize(size);
-        for(int i = 0; i < (int)_volumeElementSubspaces.size(); i++) {
-            _volumeElementSubspaces[i].read(is);
+        _metricSubspaces.resize(size);
+        for(int i = 0; i < (int)_metricSubspaces.size(); i++) {
+            _metricSubspaces[i].read(is);
         }
-        
-        InOut::Read(is, _positiveVolumeElementSubspaceIndices);
-        InOut::Read(is, _negativeVolumeElementSubspaceIndices);
         
         InOut::Read(is, _generativeDataVolumeElementIndices);
     }
@@ -594,14 +600,12 @@ private:
     vector<VolumeElement> _volumeElements;
     
     VolumeElementConfigurationMap _volumeElementConfigurationMap;
-    VpTree* _pVpTree;
-    L1Distance _l1Distance;
-    VpVolumeElementConfigurations* _pVpVolumeElementConfigurations;
+    VpTree<bool>* _pVpTree;
+    L1Distance<bool> _l1Distance;
+    VpVolumeElementConfigurations<bool>* _pVpVolumeElementConfigurations;
     
-    vector<VolumeElementElementSubspace> _volumeElementElementSubspaces;
-    vector<VolumeElementSubspace> _volumeElementSubspaces;
-    vector<int> _positiveVolumeElementSubspaceIndices;
-    vector<int> _negativeVolumeElementSubspaceIndices;
+    vector<MetricSubspaceElement> _metricSubspaceElements;
+    vector<MetricSubspace> _metricSubspaces;
     
     vector<int> _generativeDataVolumeElementIndices;
 };

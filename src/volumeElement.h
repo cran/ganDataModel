@@ -79,11 +79,11 @@ public:
         }
     }
     
-    int getElementSubspaceIndex() {
-            return _elementSubspaceIndex;
+    int getMetricSubspaceElementIndex() {
+            return _metricSubspaceElementIndex;
     }
-    void setElementSubspaceIndex(int elementSubspaceIndex) {
-        _elementSubspaceIndex = elementSubspaceIndex;
+    void setMetricSubspaceElementIndex(int metricSubspaceElementIndex) {
+        _metricSubspaceElementIndex = metricSubspaceElementIndex;
     }
     vector<float> getNumberVector() {
         vector<float> numberVector;
@@ -100,15 +100,15 @@ public:
         int size = _positiveAdjacentVolumeElements.size();
         InOut::Write(os, size);
         for(int i = 0; i < (int)_positiveAdjacentVolumeElements.size(); i++) {
-            _positiveAdjacentVolumeElements[i].write3(os);
+            _positiveAdjacentVolumeElements[i].write(os);
         }
         size = _negativeAdjacentVolumeElements.size();
         InOut::Write(os, size);
         for(int i = 0; i < (int)_negativeAdjacentVolumeElements.size(); i++) {
-            _negativeAdjacentVolumeElements[i].write3(os);
+            _negativeAdjacentVolumeElements[i].write(os);
         }
         
-        InOut::Write(os, _elementSubspaceIndex);
+        InOut::Write(os, _metricSubspaceElementIndex);
         
         InOut::Write(os, _generativeDataIndices);
     }
@@ -119,16 +119,16 @@ public:
         InOut::Read(is, size);
         _positiveAdjacentVolumeElements.resize(size);
         for(int i = 0; i < (int)_positiveAdjacentVolumeElements.size(); i++) {
-            _positiveAdjacentVolumeElements[i].read3(is);
+            _positiveAdjacentVolumeElements[i].read(is);
         }
         size = 0;
         InOut::Read(is, size);
         _negativeAdjacentVolumeElements.resize(size);
         for(int i = 0; i < (int)_negativeAdjacentVolumeElements.size(); i++) {
-            _negativeAdjacentVolumeElements[i].read3(is);
+            _negativeAdjacentVolumeElements[i].read(is);
         }
         
-        InOut::Read(is, _elementSubspaceIndex);
+        InOut::Read(is, _metricSubspaceElementIndex);
         
         InOut::Read(is, _generativeDataIndices);
     }
@@ -139,7 +139,7 @@ private:
     VolumeElementConfiguration _volumeElementConfiguration;
     vector<VpElement> _positiveAdjacentVolumeElements;
     vector<VpElement> _negativeAdjacentVolumeElements;
-    int _elementSubspaceIndex;
+    int _metricSubspaceElementIndex;
     vector<int> _generativeDataIndices;
 };
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/dmEvaluate.R
 \name{dmRead}
 \alias{dmRead}
-\title{Read a data model and generative data from files}
+\title{Read a data model and generative data}
 \usage{
 dmRead(dataModelFileName, generativeDataFileName)
 }
@@ -16,8 +16,8 @@ None
 }
 \description{
 Read a data model and generative data from files.
-This function has to be called before calling API functions to which
-file names for a data model and gernerative data are not passed directly.
+This function has to be called before calling API functions when
+file names for a data model and gernerative data are not passed to functions directly.
 }
 \examples{
 \dontrun{

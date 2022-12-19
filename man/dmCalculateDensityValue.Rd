@@ -2,7 +2,7 @@
 % Please edit documentation in R/dmEvaluate.R
 \name{dmCalculateDensityValue}
 \alias{dmCalculateDensityValue}
-\title{Calculate density value for a data record}
+\title{Calculate a density value for a data record}
 \usage{
 dmCalculateDensityValue(dataRecord)
 }
@@ -10,10 +10,10 @@ dmCalculateDensityValue(dataRecord)
 \item{dataRecord}{List containing a data record}
 }
 \value{
-Normalised density value
+Normalized density value
 }
 \description{
-Calculate density value for a data record by evaluating the trained neural network in a data model.
+Calculate a density value for a data record by evaluating the contained neural network in a data model.
 }
 \examples{
 \dontrun{

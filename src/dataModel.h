@@ -14,6 +14,7 @@
 #include "inOut.h"
 #include "dataSource.h"
 #include "volumeElementGraph.h"
+#include "metricSubspaceRelation.h"
 
 using namespace std;
 
@@ -24,6 +25,7 @@ const string cMetaFileExtension = "meta";
 const string cInvalidLevel = "Invalid level";
 
 const string cDataModelTypeId = "2da979bc-77df-4e9e-9fb2-7916e02a001c";
+const string cWildCard = "*";
 
 class TrainedModel {
 public:
@@ -123,9 +125,9 @@ public:
             throw string(cInvalidTypeId);
         }
         InOut::Read(is, _version);
-        
+
         _dataSource.read(is);
-        
+
         _trainedModel.read(is);
         
         _trainedModel.writeVectors(modelName);
@@ -136,6 +138,8 @@ public:
         for(int i = 0; i < (int)_volumeElementGraphs.size(); i++) {
             _volumeElementGraphs[i].read(is);
         }
+        
+        buildMetricSubspaceRelation();
     }
     DataSource& getDataSource() {
         return _dataSource;
@@ -169,48 +173,189 @@ public:
         }
         return levelIndex;
     }
-    int getNumberOfSubspaces(float level) {
-        int levelIndex = -1;
-        for(int i = 0; i < (int)_volumeElementGraphs.size(); i++) {
-            if(_volumeElementGraphs[i].getLevel() == level) {
-                levelIndex = i;
+    
+    int getNumberOfMetricSubspaces(float level) {
+        int levelIndex = getLevelIndex(level);
+        int numberOfMetricSubspaces = _volumeElementGraphs[levelIndex].getNumberOfMetricSubspaces();
+        return numberOfMetricSubspaces;
+    }
+    
+    void removeMetricSubspaces(float level) {
+        for(int i = 0; i < (int)getVolumeElementGraphs().size(); i++) {
+            if(getVolumeElementGraphs()[i].getLevel() == level) {
+                getVolumeElementGraphs()[i] = getVolumeElementGraphs()[getVolumeElementGraphs().size() - 1];
+                getVolumeElementGraphs().pop_back();
+                
+                buildMetricSubspaceRelation();
                 break;
             }
         }
-        if(levelIndex == -1 ) {
-            throw string(cInvalidLevel);
-        }
-        
-        int numberOfSubspaces = _volumeElementGraphs[levelIndex].getPositiveVolumeElementSubspaceIndices().size();
-        return numberOfSubspaces;
     }
-    
-    int dmGetPositiveVolumeElementSubspaceIndex(float level, VolumeElementConfiguration& volumeElementConfiguration) {
-        int subSpaceIndex = -1;
-        int levelIndex = getLevelIndex(level);
-        VolumeElementGraph& volumeElementGraph = getVolumeElementGraphs()[levelIndex];
-        VolumeElement volumeElement(volumeElementConfiguration);
+    void addMetricSubspaceEntries(VolumeElementGraph& volumeElementGraph, MetricSubspaceRelation& metricSubspaceRelation) {
+        for(int i = 0; i < (int)volumeElementGraph.getMetricSubspaces().size(); i++) {
+            if(volumeElementGraph.getMetricSubspacePositve(i, true)) {
+                vector<int>& metricSubspaceElementIndices = volumeElementGraph.getMetricSubspaces()[i].getMetricSubspaceElementIndices();
+                int metricSubspaceElementIndex = metricSubspaceElementIndices[0];
             
-        vector<VolumeElement>::iterator volumeElementsIter;
-        volumeElementsIter = lower_bound(volumeElementGraph.getVolumeElements().begin(), volumeElementGraph.getVolumeElements().end(), volumeElement, VolumeElementCompare);
-        if(volumeElementsIter != volumeElementGraph.getVolumeElements().end() && volumeElementsIter->getVolumeElementConfiguration() == volumeElementConfiguration) {
-            int elementSubspaceIndex = volumeElementsIter->getElementSubspaceIndex();
-            vector<int>::iterator positiveVolumeElementSubspaceIndicesIter;
-            positiveVolumeElementSubspaceIndicesIter = lower_bound(volumeElementGraph.getPositiveVolumeElementSubspaceIndices().begin(), volumeElementGraph.getPositiveVolumeElementSubspaceIndices().end(), elementSubspaceIndex);
-            if(positiveVolumeElementSubspaceIndicesIter != volumeElementGraph.getPositiveVolumeElementSubspaceIndices().end() &&
-                *positiveVolumeElementSubspaceIndicesIter == elementSubspaceIndex) {
-                subSpaceIndex = positiveVolumeElementSubspaceIndicesIter - volumeElementGraph.getPositiveVolumeElementSubspaceIndices().begin();
+                vector<int>& volumeElementIndices = volumeElementGraph.getMetricSubspaceElements()[metricSubspaceElementIndex].getVolumeElementIndices();
+                int volumeElementIndex = volumeElementIndices[0];
+                vector<int>& volumeElementGenerativeDataIndices = volumeElementGraph.getVolumeElements()[volumeElementIndex].getGenerativeDataIndices();
+                int generativeDataIndex = volumeElementGenerativeDataIndices[0];
+            
+                MetricSubspaceEntry metricSubspaceEntry(volumeElementGraph.getLevel(), i, volumeElementGraph.getMetricSubspaceSize(i));                
+                metricSubspaceRelation.getMetricSubspaceEntries().push_back(metricSubspaceEntry);
             }
         }
-        return subSpaceIndex;
     }
-    
+    void addMetricSubspaceRelationEntries(VolumeElementGraph& lVolumeElementGraph, VolumeElementGraph& rVolumeElementGraph, MetricSubspaceRelation& metricSubspaceRelation) {
+        for(int i = 0; i < (int)rVolumeElementGraph.getMetricSubspaces().size(); i++) {
+            if(rVolumeElementGraph.getMetricSubspacePositve(i, true)) {
+                vector<int>& rMetricSubspaceElementIndices = rVolumeElementGraph.getMetricSubspaces()[i].getMetricSubspaceElementIndices();
+                int rMetricSubspaceElementIndex = rMetricSubspaceElementIndices[0];
+            
+                vector<int>& rVolumeElementIndices = rVolumeElementGraph.getMetricSubspaceElements()[rMetricSubspaceElementIndex].getVolumeElementIndices();
+                int rVolumeElementIndex = rVolumeElementIndices[0];
+                vector<int>& rVolumeElementGenerativeDataIndices = rVolumeElementGraph.getVolumeElements()[rVolumeElementIndex].getGenerativeDataIndices();
+                int rGenerativeDataIndex = rVolumeElementGenerativeDataIndices[0];
+                int lVolumeElementIndex = lVolumeElementGraph.getGenerativeDataVolumeElementIndices()[rGenerativeDataIndex];
+                int lVolumeElementSubspaceElementIndex = lVolumeElementGraph.getVolumeElements()[lVolumeElementIndex].getMetricSubspaceElementIndex();
+                int lMetricSubspaceIndex = lVolumeElementGraph.getMetricSubspaceElements()[lVolumeElementSubspaceElementIndex].getMetricSubspaceIndex();
+            
+                MetricSubspaceEntry lMetricSubspaceEntry(lVolumeElementGraph.getLevel(), lMetricSubspaceIndex, lVolumeElementGraph.getMetricSubspaceSize(lMetricSubspaceIndex));
+                MetricSubspaceEntry rMetricSubspaceEntry(rVolumeElementGraph.getLevel(), i, rVolumeElementGraph.getMetricSubspaceSize(i));
+                MetricSubspaceRelationEntry metricSubspaceRelationEntry(lMetricSubspaceEntry, rMetricSubspaceEntry);
+                metricSubspaceRelation.getMetricSubspaceRelationEntries().push_back(metricSubspaceRelationEntry);
+            }
+        } 
+    }
+    void buildMetricSubspaceRelation() {
+        _metricSubspaceRelation.clearMetricSubspaceRelation();
+        
+        vector<float> orderedLevels = getLevels();
+        for(int i = 0; i < (int)orderedLevels.size(); i++) {
+            int lLevelIndex = getLevelIndex(orderedLevels[i]);
+            VolumeElementGraph& lVolumeElementGraph = _volumeElementGraphs[lLevelIndex];
+            addMetricSubspaceEntries(lVolumeElementGraph, _metricSubspaceRelation);
+            
+            if(i < orderedLevels.size() - 1) {
+                int rLevelIndex = getLevelIndex(orderedLevels[i + 1]);
+                VolumeElementGraph& rVolumeElementGraph = _volumeElementGraphs[rLevelIndex];
+                addMetricSubspaceRelationEntries(lVolumeElementGraph, rVolumeElementGraph, _metricSubspaceRelation);
+            }
+        }
+  
+        _metricSubspaceRelation.sortMetricSubspaceEntries();
+        //if(_metricSubspaceRelation.getMetricSubspaceRelationEntries().size() > 0) {
+        //    _metricSubspaceRelation.createLabels(_metricSubspaceRelation.getMetricSubspaceRelationEntries()[0].getLMetricSubspaceEntry().getLevel());
+        //    _metricSubspaceRelation.setLabels();
+        //}
+        if(_metricSubspaceRelation.getMetricSubspaceEntries().size() > 0) {
+          _metricSubspaceRelation.createLabels(_metricSubspaceRelation.getMetricSubspaceEntries()[0].getLevel());
+          _metricSubspaceRelation.setLabels();
+        }
+    }
+    MetricSubspaceRelation& getMetricSubspaceRelation() {
+        return _metricSubspaceRelation;
+    }
+
+    vector<int> getMetricSubspaceIndices(float level) {
+        int levelIndex = getLevelIndex(level);
+        vector<int> metricSubspaceIndices;
+        for(int i = 0; i < (int)_metricSubspaceRelation.getMetricSubspaceEntries().size(); i++) {
+            MetricSubspaceEntry& metricSubspaceEntry = _metricSubspaceRelation.getMetricSubspaceEntries()[i];
+            if(metricSubspaceEntry.getLevel() == level) {
+                metricSubspaceIndices.push_back(metricSubspaceEntry.getMetricSubspaceIndex());
+            }
+        }
+        return metricSubspaceIndices;
+    }
+    vector<int> getMetricSubspaceIndices(float level, const vector<string>& labels) {
+        int levelIndex = getLevelIndex(level);
+      
+        set<string> labelSet;
+        for(int i = 0; i < labels.size(); i++) {
+            labelSet.insert(labels[i]);
+        }
+        vector<int> metricSubspaceIndices;
+        for(int i = 0; i < (int)_metricSubspaceRelation.getMetricSubspaceEntries().size(); i++) {
+            MetricSubspaceEntry& metricSubspaceEntry = _metricSubspaceRelation.getMetricSubspaceEntries()[i];
+            if(metricSubspaceEntry.getLevel() == level && (labelSet.empty() || labelSet.find(cWildCard) != labelSet.end() || labelSet.find(metricSubspaceEntry.getLabel()) != labelSet.end())) {
+                metricSubspaceIndices.push_back(metricSubspaceEntry.getMetricSubspaceIndex());
+            }
+        }
+        return metricSubspaceIndices;
+    }
+    vector<int> getMetricSubspaceEntryIndices(float level, int metricSubspaceIndex) {
+        vector<int> metricSubspaceEntryIndices;
+        for(int i = 0; i < (int)_metricSubspaceRelation.getMetricSubspaceEntries().size(); i++) {
+            if(_metricSubspaceRelation.getMetricSubspaceEntries()[i].getLevel() == level &&
+                _metricSubspaceRelation.getMetricSubspaceEntries()[i].getMetricSubspaceSize() <= _metricSubspaceRelation.getMetricSubspaceEntries()[metricSubspaceIndex].getMetricSubspaceSize() &&
+                _metricSubspaceRelation.getMetricSubspaceEntries()[i].getMetricSubspaceIndex() != metricSubspaceIndex) {
+                metricSubspaceEntryIndices.push_back(i);
+            }
+        }
+        return metricSubspaceEntryIndices;
+    }
+    vector<int> getMetricSubspaceEntryIndices(float level) {
+        vector<int> metricSubspaceEntryIndices;
+        for(int i = 0; i < (int)_metricSubspaceRelation.getMetricSubspaceEntries().size(); i++) {
+            if(_metricSubspaceRelation.getMetricSubspaceEntries()[i].getLevel() == level) {
+                metricSubspaceEntryIndices.push_back(i);
+            }
+        }
+        return metricSubspaceEntryIndices;
+    }
+    vector<int> getMetricSubspaceGenerativeDataIndices(vector<int>& metricSubspaceEntryIndices) {
+        vector<int> generativeDataIndices;
+        for(int i = 0; i < (int)metricSubspaceEntryIndices.size(); i++) {
+            int metricSubspaceEntryIndex = metricSubspaceEntryIndices[i];
+            float metricSubspaceIndex = _metricSubspaceRelation.getMetricSubspaceEntries()[metricSubspaceEntryIndex].getMetricSubspaceIndex();
+            
+            float level = _metricSubspaceRelation.getMetricSubspaceEntries()[metricSubspaceEntryIndex].getLevel();
+            int levelIndex = getLevelIndex(level);
+            VolumeElementGraph& volumeElementGraph = getVolumeElementGraphs()[levelIndex];
+            
+            vector<int> lGenerativeDataIndices = volumeElementGraph.getGenerativeDataVolumeElementIndices(metricSubspaceIndex, false);
+            generativeDataIndices.insert(generativeDataIndices.end(), lGenerativeDataIndices.begin(), lGenerativeDataIndices.end());
+        }
+
+        return generativeDataIndices;
+    }
+    vector<int> getMetricSubspaceGenerativeDataIndices(float lLevel, float rLevel, int metricSubspaceIndex) {
+        vector<int> generativeDataIndices;
+
+        vector<int> metricSubspaceEntryIndices = getMetricSubspaceEntryIndices(lLevel, metricSubspaceIndex);
+        vector<int> lGenerativeDataIndices = getMetricSubspaceGenerativeDataIndices(metricSubspaceEntryIndices);
+        generativeDataIndices.insert(generativeDataIndices.begin(), lGenerativeDataIndices.begin(), lGenerativeDataIndices.end());
+
+        if(rLevel != -1) {
+            metricSubspaceEntryIndices = getMetricSubspaceEntryIndices(rLevel);
+            vector<int> rGenerativeDataIndices = getMetricSubspaceGenerativeDataIndices(metricSubspaceEntryIndices);
+            generativeDataIndices.insert(generativeDataIndices.begin(), rGenerativeDataIndices.begin(), rGenerativeDataIndices.end());
+        }
+  
+        return generativeDataIndices;
+    }
+    string getMetricSubspaceLabel(float level, int metricSubspaceIndex) {
+        string label = "";
+        for(int i = 0; i < (int)_metricSubspaceRelation.getMetricSubspaceEntries().size(); i++) {
+            MetricSubspaceEntry& metricSubspaceEntry = _metricSubspaceRelation.getMetricSubspaceEntries()[i];
+            if(metricSubspaceEntry.getLevel() == level && metricSubspaceEntry.getMetricSubspaceIndex() == metricSubspaceIndex) {
+                label = metricSubspaceEntry.getLabel();
+                break;
+            } 
+        }
+        return label;
+    }
+  
 private:
     string _typeId;
     int _version;
     DataSource _dataSource;
     TrainedModel _trainedModel;
     vector<VolumeElementGraph> _volumeElementGraphs;
+    
+    MetricSubspaceRelation _metricSubspaceRelation;
 };
 
 #endif

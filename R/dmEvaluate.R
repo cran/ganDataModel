@@ -68,11 +68,11 @@ loadSession <- function(dataModelFileName) {
   evalEnvironment$session
 } 
 
-#' Read a data model and generative data from files
+#' Read a data model and generative data
 #'
 #' Read a data model and generative data from files.
-#' This function has to be called before calling API functions to which
-#' file names for a data model and gernerative data are not passed directly.
+#' This function has to be called before calling API functions when
+#' file names for a data model and gernerative data are not passed to functions directly.
 #'
 #' @param dataModelFileName Name of data model file
 #' @param generativeDataFileName Name of generative data file
@@ -87,10 +87,8 @@ dmRead <- function(dataModelFileName, generativeDataFileName) {
   if(length(evalEnvironment$session) > 0) {
     evalEnvironment$session[[1]]$close()
   }
-  
   dmReadSub(generativeDataFileName, dataModelFileName);
   loadSession(dataModelFileName)
-  
   return()
 }
 
@@ -124,13 +122,13 @@ dmEvaluate <- function(data, withDenseLayers = FALSE) {
   e
 }
 
-#' Calculate density value for a data record
+#' Calculate a density value for a data record
 #' 
-#' Calculate density value for a data record by evaluating the trained neural network in a data model.
+#' Calculate a density value for a data record by evaluating the contained neural network in a data model.
 #'
 #' @param dataRecord List containing a data record
 #'
-#' @return Normalised density value
+#' @return Normalized density value
 #' @export
 #'
 #' @examples

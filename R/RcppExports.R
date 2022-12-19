@@ -133,16 +133,20 @@ dmAddVolumeElementGraph <- function() {
     invisible(.Call('_ganDataModel_dmAddVolumeElementGraph', PACKAGE = 'ganDataModel'))
 }
 
-dmBuildSubspacesSub <- function() {
-    .Call('_ganDataModel_dmBuildSubspacesSub', PACKAGE = 'ganDataModel')
+dmBuildMetricSubspacesSub <- function() {
+    .Call('_ganDataModel_dmBuildMetricSubspacesSub', PACKAGE = 'ganDataModel')
 }
 
 dmGetGenerativeDataRandom <- function(percent) {
     .Call('_ganDataModel_dmGetGenerativeDataRandom', PACKAGE = 'ganDataModel', percent)
 }
 
-dmGetSubspaceDenormalizedGenerativeData <- function(level, subspace, percent, boundary = FALSE) {
-    .Call('_ganDataModel_dmGetSubspaceDenormalizedGenerativeData', PACKAGE = 'ganDataModel', level, subspace, percent, boundary)
+dmGetMetricSubspaceDenormalizedGenerativeData <- function(level, metricSubspaceIndex, percent, boundary = FALSE) {
+    .Call('_ganDataModel_dmGetMetricSubspaceDenormalizedGenerativeData', PACKAGE = 'ganDataModel', level, metricSubspaceIndex, percent, boundary)
+}
+
+dmGetMetricSubspaceIndices <- function(level, labels) {
+    .Call('_ganDataModel_dmGetMetricSubspaceIndices', PACKAGE = 'ganDataModel', level, labels)
 }
 
 dmGetAdjacentVolumeElementIndices <- function(index) {
@@ -157,9 +161,9 @@ dmGetMin <- function(i) {
     .Call('_ganDataModel_dmGetMin', PACKAGE = 'ganDataModel', i)
 }
 
-#' Get levels for subspaces
+#' Get levels for metric subspaces
 #'
-#' Get levels for subspaces in a data model.
+#' Get levels for metric subspaces in a data model.
 #'
 #' @return Vector of levels
 #' @export
@@ -172,32 +176,40 @@ dmGetLevels <- function() {
     .Call('_ganDataModel_dmGetLevels', PACKAGE = 'ganDataModel')
 }
 
-#' Get number of subspaces for a level
+#' Get metric subspace properties for a level
 #'
-#' Get number of subspaces in a data model for a level.
+#' Get properties of metric subspaces in a data model for a level.
 #'
-#' @param level Level
+#' @param level Level for metric subspaces
 #'
-#' @return Number of subspaces
+#' @return List of list containing label and size of contained generative data for metric subspaces
 #' @export
 #'
 #' @examples
 #' \dontrun{
 #' dmRead("dm.bin", "gd.bin")
-#' dmGetNumberOfSubspaces(0.73)}
-dmGetNumberOfSubspaces <- function(level) {
-    .Call('_ganDataModel_dmGetNumberOfSubspaces', PACKAGE = 'ganDataModel', level)
+#' dmGetMetricSubspaceProperties(0.73)}
+dmGetMetricSubspaceProperties <- function(level) {
+    .Call('_ganDataModel_dmGetMetricSubspaceProperties', PACKAGE = 'ganDataModel', level)
 }
 
-dmRemoveSubspacesSub <- function(level) {
-    invisible(.Call('_ganDataModel_dmRemoveSubspacesSub', PACKAGE = 'ganDataModel', level))
+dmRemoveMetricSubspacesSub <- function(level) {
+    invisible(.Call('_ganDataModel_dmRemoveMetricSubspacesSub', PACKAGE = 'ganDataModel', level))
 }
 
 dmNormalizedDataRecord <- function(dataRecord) {
     .Call('_ganDataModel_dmNormalizedDataRecord', PACKAGE = 'ganDataModel', dataRecord)
 }
 
-dmGetSubspacesSub <- function(dataRecord, level) {
-    .Call('_ganDataModel_dmGetSubspacesSub', PACKAGE = 'ganDataModel', dataRecord, level)
+dmGetMetricSubspacesSub <- function(dataRecord, level) {
+    .Call('_ganDataModel_dmGetMetricSubspacesSub', PACKAGE = 'ganDataModel', dataRecord, level)
+}
+
+dmMetricSubspaceLabelPointsSub <- function(lLevel, rLevel, percent, columnIndices, lLabels) {
+    .Call('_ganDataModel_dmMetricSubspaceLabelPointsSub', PACKAGE = 'ganDataModel', lLevel, rLevel, percent, columnIndices, lLabels)
+}
+
+dmSortLevelIndices <- function(levels) {
+    .Call('_ganDataModel_dmSortLevelIndices', PACKAGE = 'ganDataModel', levels)
 }
 

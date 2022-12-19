@@ -95,7 +95,7 @@ dmTrainSub <- function(numberOfIterations, dataModelFileName) {
 #' Read a data source and generative data from files,
 #' train a neural network
 #' which approximates density values for a data source in iterative training steps,
-#' create a data model with the trained neural network 
+#' create a data model containing the trained neural network 
 #' and write it to a file in binary format.
 #'
 #' @param dataModelFileName Name of data model file
@@ -108,12 +108,10 @@ dmTrainSub <- function(numberOfIterations, dataModelFileName) {
 #'
 #' @examples
 #' \dontrun{
-#' dmGTrain("dm.bin", "iris4d.bin", "gd.bin", 10000)}
+#' dmTrain("dm.bin", "ds.bin", "gd.bin", 10000)}
 dmTrain <- function(dataModelFileName, dataSourceFileName, generativeDataFileName, numberOfIterations) {
   dmDataSourceRead(dataSourceFileName)
   dmGenerativeDataRead(generativeDataFileName)
   dmTrainSub(numberOfIterations, dataModelFileName)
   dmWriteWithReadingTrainedModel(dataModelFileName)
 }
-
-
