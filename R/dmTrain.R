@@ -3,7 +3,7 @@
 
 library(tensorflow)
 library(Rcpp)
-Sys.setenv("PKG_CXXFLAGS"="-std=c++11")
+Sys.setenv("PKG_CXXFLAGS"="-std=c++17")
 sourceCpp("src/dmInt.cpp")
 
 dmTrainSub <- function(numberOfIterations, dataModelFileName) {
@@ -19,7 +19,7 @@ dmTrainSub <- function(numberOfIterations, dataModelFileName) {
   gdTf$reset_default_graph()
   
   x <- gdTf$placeholder(tf$float32, shape = c(batchSize, dataDimension))
-  y <- gdTf$placeholder(tf$float32, shape = c(batchSize, 1))
+  y <- gdTf$placeholder(tf$float32, shape = c(batchSize, 1L))
   
   discriminator <- function(x, hsize = c(512, 512), reuse=FALSE) {
     with (gdTf$variable_scope('GAN/Discriminator', reuse=reuse), {
@@ -34,29 +34,29 @@ dmTrainSub <- function(numberOfIterations, dataModelFileName) {
 
       denseLayer4 <- gdTf$layers$dense(inputs = leakyRelu3, units = 1, name = "dl4")
       leakyRelu4 <- gdTf$nn$leaky_relu(denseLayer4)
-      
+
       logits <- gdTf$layers$dense(inputs = leakyRelu4, units = 1, name = "l")
     })
     list(denseLayer1, denseLayer2, denseLayer3, denseLayer4, logits)
   }
   
   discriminatorLayers <- discriminator(x, reuse = gdTf$AUTO_REUSE)
-  
+
   denseLayerIdentity <- function(denseLayer) {
     r <- gdTf$identity(denseLayer)
   }
-  
+
   denseLayer1 <- denseLayerIdentity(discriminatorLayers[[1]])
   denseLayer2 <- denseLayerIdentity(discriminatorLayers[[2]])
   denseLayer3 <- denseLayerIdentity(discriminatorLayers[[3]])
   denseLayer4 <- denseLayerIdentity(discriminatorLayers[[4]])
   logits <- denseLayerIdentity(discriminatorLayers[[5]])
-  
+
   loss <- function(logitsY, valuesY) {
     r <- gdTf$reduce_mean(gdTf$square(logitsY - valuesY))
   }
   discriminatorLoss <- loss(logits, y)
-  
+
   vars = gdTf$get_collection(gdTf$GraphKeys$GLOBAL_VARIABLES, scope="GAN/Discriminator")
   trainer <- gdTf$train$RMSPropOptimizer(lr)$minimize(discriminatorLoss, var_list = vars)
   
@@ -73,7 +73,7 @@ dmTrainSub <- function(numberOfIterations, dataModelFileName) {
 
       data <- array_reshape(dataRandom[1], c(batchSize, dataDimension))
       densityValues <- array_reshape(dataRandom[2], c(batchSize, 1))
-      
+
       if(iteration < 1) {
         data <- array_reshape(runif(batchSize * dataDimension, 0.0, 1.0), c(batchSize, dataDimension))
         densityValues <- array_reshape(runif(batchSize, 0.0, 1.0), c(batchSize, 1))
@@ -83,7 +83,7 @@ dmTrainSub <- function(numberOfIterations, dataModelFileName) {
     }
     message(iteration, "   ", format(round(r[[2]], 6)))
   }
-  
+
   saver <- gdTf$train$Saver()
   dm <- dmBuildFileName(dataModelFileName, "")
   saver$save(session, dm)
@@ -110,8 +110,13 @@ dmTrainSub <- function(numberOfIterations, dataModelFileName) {
 #' \dontrun{
 #' dmTrain("dm.bin", "ds.bin", "gd.bin", 10000)}
 dmTrain <- function(dataModelFileName, dataSourceFileName, generativeDataFileName, numberOfIterations) {
+  start <- Sys.time()
+    
   dmDataSourceRead(dataSourceFileName)
   dmGenerativeDataRead(generativeDataFileName)
   dmTrainSub(numberOfIterations, dataModelFileName)
   dmWriteWithReadingTrainedModel(dataModelFileName)
+  
+  end <- Sys.time()
+  message(round(difftime(end, start, units = "secs"), 3), " seconds")
 }

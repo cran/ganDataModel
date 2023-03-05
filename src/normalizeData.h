@@ -36,8 +36,12 @@ public:
             NumberColumn::SCALE_TYPE scaleType = pNumberColumn->getScaleType();
             float fMax = numeric_limits<float>::min();
             float fMin = numeric_limits<float>::max();
-            for(int i = 0; i < pNumberColumn->getValueVector().size(); i++) {
+            for(int i = 0; i < (int)pNumberColumn->getValueVector().size(); i++) {
                 float number = pNumberColumn->getValueVector()[i];
+                if(isnan(number)) {
+                    continue;    
+                }
+                
                 if(number > fMax) {
                     fMax = number;
                 }
@@ -46,12 +50,23 @@ public:
                 }
             }
             if(calculateMinMax) {
+                if(fMax == numeric_limits<float>::min()) {
+                    fMax = 1.0;
+                }
+                if(fMin == numeric_limits<float>::max()) {
+                    fMin = 0.0;
+                }
                 pNumberColumn->setMax(fMax);
                 pNumberColumn->setMin(fMin);
             }
-        
+            
             pNumberColumn->getNormalizedValueVector().resize(pNumberColumn->getValueVector().size(), 0);
             for(int j = 0; j < (int)pNumberColumn->getValueVector().size(); j++) {
+                if(isnan(pNumberColumn->getValueVector()[j])) {
+                    pNumberColumn->getNormalizedValueVector()[j] = pNumberColumn->getValueVector()[j];
+                    continue;    
+                }
+                
                 float normalizedNumber = 0;
                 if(scaleType == NumberColumn::LINEAR) {
                     if(pNumberColumn->getMax() - pNumberColumn->getMin() > 0) {
@@ -59,6 +74,7 @@ public:
                             (pNumberColumn->getMax() - pNumberColumn->getMin());
                     } else {
                         if(pNumberColumn->getMax() > 0) {
+                            //normalizedNumber = pNumberColumn->getMax();
                             normalizedNumber = 1;
                         }
                     }
@@ -68,6 +84,7 @@ public:
                             log(pNumberColumn->getMax() - pNumberColumn->getMin() + 1);
                     } else {
                         if(pNumberColumn->getMax() > 0) {
+                            //normalizedNumber = pNumberColumn->getMax();
                             normalizedNumber = 1;
                         }
                     }
@@ -77,14 +94,28 @@ public:
                 pNumberColumn->getNormalizedValueVector()[j] = normalizedNumber;
             }
         } else if(type == Column::STRING) {
-            throw string(cInvalidColumnType);
+            string invalidColumnType = cInvalidColumnPrefix + " ";
+            for(int i = 0; i < (int)pColumn->getName().length(); i++) {
+                char c = static_cast<char>(pColumn->getName()[i]);
+                invalidColumnType += c;
+            }
+            invalidColumnType += " " + cInvalidTypeSuffix;;
+                
+            throw string(invalidColumnType);
         } else {
-            throw string(cInvalidColumnType);
+            string invalidColumnType = cInvalidColumnPrefix + " ";
+            for(int i = 0; i < (int)pColumn->getName().length(); i++) {
+                char c = static_cast<char>(pColumn->getName()[i]);
+                invalidColumnType += c;
+            }
+            invalidColumnType += " " + cInvalidTypeSuffix;;
+            
+            throw string(invalidColumnType);
         }
     }
     
     vector<float> getNormalizedNumberVector(DataSource& dataSource, vector<float>& numberVector) {
-        if(dataSource.getDimension() != numberVector.size()) {
+        if(dataSource.getDimension() != (int)numberVector.size()) {
             throw string(cInvalidDimension);
         }
         
@@ -124,6 +155,7 @@ public:
                     normalizedNumber = (number - pNumberColumn->getMin()) / (pNumberColumn->getMax() - pNumberColumn->getMin());
                 } else {
                     if(pNumberColumn->getMax() > 0) {
+                        //normalizedNumber = pNumberColumn->getMax();
                         normalizedNumber = 1;
                     }
                 }
@@ -133,6 +165,7 @@ public:
                         log(pNumberColumn->getMax() - pNumberColumn->getMin() + 1);
                 } else {
                     if(pNumberColumn->getMax() > 0) {
+                        //normalizedNumber = pNumberColumn->getMax();
                         normalizedNumber = 1;
                     }
                 }
@@ -145,6 +178,10 @@ public:
         }
     }
     float getDenormalizedNumber(Column* pColumn, float number) {
+        if(isnan(number)) {
+            return number;
+        }
+        
         Column::COLUMN_TYPE type = pColumn->getColumnType();
         if(type == Column::NUMERICAL) {
             NumberColumn* pNumberColumn = dynamic_cast<NumberColumn*>(pColumn);

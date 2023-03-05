@@ -3,7 +3,7 @@
 
 library(tensorflow)
 library(Rcpp)
-Sys.setenv("PKG_CXXFLAGS"="-std=c++11")
+Sys.setenv("PKG_CXXFLAGS"="-std=c++17")
 sourceCpp("src/dmInt.cpp")
 
 evalEnvironment <- new.env(parent = emptyenv())
@@ -176,4 +176,3 @@ dmEvaluateDataSource <- function(evaluateDataSourceFileName) {
   }
   evaluateRows
 }
-

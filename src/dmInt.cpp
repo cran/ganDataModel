@@ -26,7 +26,7 @@ namespace dmInt {
     int minMetricSubspaceSize = 1000;
     
     int nNearestNeighborDistances = 8;
-    int nNearestNeighbors = 256;
+    int nNearestNeighbors = 128;
     
     int nMetricSubspaceNearestNeighborDistances = 8;
     int nMetricSubspaceNearestNeighbors = 8;
@@ -36,7 +36,7 @@ namespace dmInt {
 
 vector<int> randomIndicesWithoutReplacement(int size, float percent, int seed = -1) {
     vector<int> indices(size);
-    for(int i = 0; i < indices.size(); i++) {
+    for(int i = 0; i < (int)indices.size(); i++) {
         indices[i] = i;
     }
   
@@ -183,12 +183,12 @@ std::vector<std::vector<float>> dmDataSourceGetDataRandom(float percent) {
         vector<int> randomIndices1 = randomIndicesWithoutReplacement(dmInt::pDataModel->getDataSource().getNormalizedSize(), percent);
 
         std::vector<vector<float>> v(2);
-        for(int i = 0; i < randomIndices1.size(); i++) {
+        for(int i = 0; i < (int)randomIndices1.size(); i++) {
             vector<float> numberVector = dmInt::pDataModel->getDataSource().getNormalizedNumberVector(randomIndices1[i]);
             v[0].insert(v[0].end(), numberVector.begin(), numberVector.end());
         }
 
-        for(int i = 0; i < randomIndices1.size(); i++) {
+        for(int i = 0; i < (int)randomIndices1.size(); i++) {
             vector<float> numberVector = dmInt::pDataModel->getDataSource().getDenormalizedNumberVector(randomIndices1[i]);
             v[1].insert(v[1].end(), numberVector.begin(), numberVector.end());
         }
@@ -454,7 +454,7 @@ std::vector<std::wstring> dmGetNumberVectorIndexNames(std::vector<int>& numberVe
         }
     
         vector<int> indexVector = numberVectorIndices;
-        for(int i = 0; i < indexVector.size(); i++) {
+        for(int i = 0; i < (int)indexVector.size(); i++) {
             indexVector[i] -= 1;
         }
         vector<wstring> numberVectorIndexNames = dmInt::pGenerativeData->getNumbeVectorIndexNames(indexVector);
@@ -501,7 +501,7 @@ List dmGetRow(int index) {
     
         List list;
         vector<Column*> const & columnVector = dmInt::pGenerativeData->getColumnVector();
-        for(int i = 0; i < columnVector.size(); i++) {
+        for(int i = 0; i < (int)columnVector.size(); i++) {
             Column::COLUMN_TYPE type = columnVector[i]->getColumnType();
             if(type == Column::NUMERICAL) {
                 vector<float> numberVector = columnVector[i]->getDenormalizedNumberVector(index - 1);
@@ -701,11 +701,11 @@ std::vector<std::vector<float>> dmGetGenerativeDataRandom(float percent) {
         vector<int> randomIndices1 = randomIndicesWithoutReplacement(dmInt::pGenerativeData->getNormalizedSize(), percent);
 
         std::vector<vector<float>> v(2);
-        for(int i = 0; i < randomIndices1.size(); i++) {
+        for(int i = 0; i < (int)randomIndices1.size(); i++) {
             vector<float> numberVector = ((DataSource*)dmInt::pGenerativeData)->getNormalizedNumberVector(randomIndices1[i]);
             v[0].insert(v[0].end(), numberVector.begin(), numberVector.end());
         }
-        for(int i = 0; i < randomIndices1.size(); i++) {
+        for(int i = 0; i < (int)randomIndices1.size(); i++) {
             vector<float> numberVector = ((DataSource*)dmInt::pGenerativeData)->getDenormalizedNumberVector(randomIndices1[i]);
             v[1].insert(v[1].end(), numberVector.begin(), numberVector.end());
         }
@@ -787,11 +787,11 @@ List dmGetAdjacentVolumeElementIndices(int index) {
         vector<VpElement> negativeAdjacentElements = dmInt::pVolumeElementGraph->getVolumeElements()[index].getNegativeAdjacentVolumeElements();
     
         List list;
-        for(int i = 0; i < positiveAdjacentElements.size(); i++) {
+        for(int i = 0; i < (int)positiveAdjacentElements.size(); i++) {
             list.insert(list.end(), positiveAdjacentElements[i].getIndex());
             list.insert(list.end(), positiveAdjacentElements[i].getDistance());
         }
-        for(int i = 0; i < negativeAdjacentElements.size(); i++) {
+        for(int i = 0; i < (int)negativeAdjacentElements.size(); i++) {
             list.insert(list.end(), negativeAdjacentElements[i].getIndex());
             list.insert(list.end(), negativeAdjacentElements[i].getDistance());
         }
@@ -996,7 +996,7 @@ List dmGetMetricSubspacesSub(List dataRecord, float level) {
         vector<float> levels = dmInt::pDataModel->getLevels();
         for(int i = 0; i < (int)levels.size(); i++) {
             bool found = false;
-            for(int j = 0; j < nearestNeighbors.size(); j++) {
+            for(int j = 0; j < (int)nearestNeighbors.size(); j++) {
                 int levelIndex = dmInt::pDataModel->getLevelIndex(levels[i]);
                 VolumeElementGraph& volumeElementGraph = dmInt::pDataModel->getVolumeElementGraphs()[levelIndex];
                 int volumeElementIndex = volumeElementGraph.getGenerativeDataVolumeElementIndices()[nearestNeighbors[j].getIndex()];

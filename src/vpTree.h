@@ -53,7 +53,7 @@ struct L2Distance : public LpDistance<T> {
             throw string(cDifferentSizes);
         }
         float d = 0.0;
-        for(int i = 0; i < a.size(); i++) {
+        for(int i = 0; i < (int)a.size(); i++) {
             d += (a[i] - b[i]) * (a[i] - b[i]);
         }
         return sqrt(d);
@@ -84,15 +84,11 @@ struct L2DistanceNanIndexed : public LpDistance<T> {
     L2DistanceNanIndexed(const L2DistanceNanIndexed& l2DistanceNanIndexed): _distance(l2DistanceNanIndexed._distance) {
     }
     float operator()(const vector<T>& a, const vector<T>& b) {
-        //Function f("message");
-        //f("indexed");
-        //f(a.size());
-        //f(b.size());
         if(a.size() != _distance.size() || b.size() != _distance.size()) {
             throw string(cDifferentSizes);
         }
         float d = 0.0;
-        for(int i = 0; i < a.size(); i++) {
+        for(int i = 0; i < (int)a.size(); i++) {
             if(isnan(_distance[i])) {
                 continue;
             }
@@ -110,7 +106,7 @@ struct L1Distance<bool> : public LpDistance<bool> {
             throw string(cDifferentSizes);
         }
         float d = 0.0;
-        for(int i = 0; i < a.size(); i++) {
+        for(int i = 0; i < (int)a.size(); i++) {
             if(a[i] != b[i])
             {
                 d += 1.0;
@@ -309,15 +305,12 @@ private:
 template <typename T>
 class VpTree {
 public:
-    VpTree(): _pVpNode(0), _pVpTreeData(0), _tau(numeric_limits<float>::max()), _pProgress(0), _pLpDistance(0), _pG(new mt19937(_rd())), _pR(0), _pGd(0) {
+    VpTree(): _pVpNode(0), _pVpTreeData(0), _tau(numeric_limits<float>::max()), _pProgress(0), _pLpDistance(0) {
     }
-    VpTree(VpTreeData<T>* pVpTreeData, LpDistance<T>* pLpDistance, Progress* pProgress): _pVpNode(0), _pVpTreeData(pVpTreeData), _tau(numeric_limits<float>::max()), _pProgress(pProgress), _pLpDistance(pLpDistance), _pG(new mt19937(_rd())), _pR(0), _pGd(0) {
+    VpTree(VpTreeData<T>* pVpTreeData, LpDistance<T>* pLpDistance, Progress* pProgress): _pVpNode(0), _pVpTreeData(pVpTreeData), _tau(numeric_limits<float>::max()), _pProgress(pProgress), _pLpDistance(pLpDistance) {
     }
     ~VpTree() {
         delete _pVpNode;
-        delete _pR;
-        delete _pG;
-        delete _pGd;
     }
     
     VpNode* build(int lower, int upper) {
@@ -333,9 +326,7 @@ public:
         pVpNode->setIndex(lower);
     
         if(upper - lower > 1) {
-            //int i = (int)((float)(*_pR)(*_pGd) / (float)(_pVpTreeData->getSize() - 1) * (float)(upper - lower - 1)) + lower;
-            uniform_int_distribution<int> uid(lower, upper - 1);
-            int i = uid(*_pGd);
+            int i = _uniformIntDistribution.setParameters(lower, upper - 1)();
             
             swap(_indexVector[lower], _indexVector[i]);
             int median = (upper + lower) / 2;
@@ -365,11 +356,8 @@ public:
         for(int i = 0; i < _pVpTreeData->getSize(); i++) {
             _indexVector[i] = i;
         }
-        delete _pGd;
-        //_pGd = new default_random_engine(30);
-        _pGd = new default_random_engine(1);
-        delete _pR;
-        _pR = new uniform_int_distribution<int>(0, _pVpTreeData->getSize() - 1);
+        
+        _uniformIntDistribution.seed(23);
         _pVpNode = build(0, _indexVector.size());
         
         if(_pProgress != 0) {
@@ -407,7 +395,7 @@ public:
         float d = (*_pLpDistance)(numberVector, target);
         if(d <= _tau) {
             _unique.insert(d);
-            if(_unique.size() > kDistances || priorityQueue.size() > k) {
+            if((int)_unique.size() > kDistances || (int)priorityQueue.size() > k) {
                 float tau = priorityQueue.top().getDistance();
                 while(!priorityQueue.empty() && priorityQueue.top().getDistance() == tau) {
                     priorityQueue.pop();
@@ -437,7 +425,6 @@ public:
     }
     void linearSearch(const vector<T>& target, int kDistances, int k, vector<VpElement>& nearestNeighbors) {
         priority_queue<VpElement> priorityQueue;
-        float tau = numeric_limits<float>::max();
         _unique.clear();
         
         for(int i = 0; (int)i < _pVpTreeData->getSize(); i++) {
@@ -445,7 +432,7 @@ public:
             float d = (*_pLpDistance)(numberVector, target);
             if(d <= _tau) {
                 _unique.insert(d);
-                if(_unique.size() > kDistances || priorityQueue.size() > k) {
+                if((int)_unique.size() > kDistances || (int)priorityQueue.size() > k) {
                     float tau = priorityQueue.top().getDistance();
                     while(!priorityQueue.empty() && priorityQueue.top().getDistance() == tau) {
                         priorityQueue.pop();
@@ -483,14 +470,10 @@ private:
     Progress* _pProgress;
     LpDistance<T>* _pLpDistance;
     
-    random_device _rd;
-    mt19937* _pG;
-    uniform_int_distribution<int>* _pR;
-    
     set<float> _unique;
     int _i;
     
-    default_random_engine *_pGd;
+    UniformIntDistribution _uniformIntDistribution;
 };
 
 #endif

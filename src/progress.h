@@ -22,7 +22,7 @@ public:
     }
     void operator()(int n) {
 #ifdef GD_RCPP
-        if(n + _offset== 0 && _lastPercent == -1) {
+        if(n + _offset == 0 && _lastPercent == -1) {
             Function f("message");
             f("0%");
             _lastPercent = 0;
@@ -55,6 +55,12 @@ public:
             Rcpp::checkUserInterrupt();
         }
 #endif
+    }
+    void reset(int size) {
+        _lastPercent = -1;
+        _size = size;
+        _beginCount = 0,
+        _offset = 0;
     }
     void setOffset(int offset) {
         _offset = offset;

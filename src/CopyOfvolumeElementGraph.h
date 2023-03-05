@@ -163,6 +163,7 @@ public:
     }
     
     void buildVolumeElements() {
+        //int dimension = 0;
         if(_volumeElementConfigurationMap.size() == 0) {
             return;
         }
@@ -192,10 +193,8 @@ public:
     }
     void buildVolumeElementTree(Progress* pProgress) {
         _pVpVolumeElementConfigurations = new VpVolumeElementConfigurations<bool>(_volumeElements);
-        if(pProgress != 0) {
-            pProgress->reset(_pVpVolumeElementConfigurations->getSize());
-        }
-
+        delete pProgress;
+        pProgress = new Progress(_pVpVolumeElementConfigurations->getSize());
         delete _pVpTree;
         _pVpTree = new VpTree<bool>();
         _pVpTree->build(_pVpVolumeElementConfigurations, new L1Distance<bool>(), pProgress);
@@ -221,11 +220,11 @@ public:
         if(boundary && !_volumeElements[i].isBoundaryElement()) {
             return;
         }
-
+            
         vector<VpElement> adjacentVolumeElements = gedAdjacentVolumeElements(i, kDistances, k);
         VpElementCompare vpElementCompare;
         sort(adjacentVolumeElements.begin(), adjacentVolumeElements.end(), vpElementCompare);
- 
+            
         vector<VpElement> positiveAdjacentVolumeElements = getSignedAdjacentVolumeElements(adjacentVolumeElements, true);
         vector<VpElement> negativeAdjacentVolumeElements = getSignedAdjacentVolumeElements(adjacentVolumeElements, false);
         if(positiveAdjacentVolumeElements.size() > _volumeElements[i].getPositiveAdjacentVolumeElements().size()) {
@@ -245,18 +244,15 @@ public:
         }
     }
     void buildVolumeElementGraphIterative(int kDistances, int k, int iterations, bool boundary = false, Progress* pProgress = 0) {
-        if(pProgress != 0) {
-            pProgress->reset(iterations * _volumeElements.size());
-        }
-
+        delete pProgress;
+        pProgress = new Progress(iterations * _volumeElements.size());
+        
         int kNearestNeighbors = kDistances;
         for(int i = 1; i <= iterations; i++) {
             buildVolumeElementGraph(kNearestNeighbors, k, boundary, pProgress);
             kNearestNeighbors = kNearestNeighbors * 2;
             
-            if(pProgress != 0) {
-                pProgress->setOffset(i * _volumeElements.size());
-            }
+            pProgress->setOffset(i * _volumeElements.size());
         }
     }
     void buildVolumeElementGraphMetricSubspaceElement(int kDistances, int k, int maxSize, bool boundary = false) {

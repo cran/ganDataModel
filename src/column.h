@@ -12,6 +12,7 @@ const string cInvalidColumnType = "Invalid column type";
 const string cInvalidActiveColumn = "Invalid active column";
 const string cInvalidScaleType = "Invalid scale type";
 const string cInvalidIndex = "Invalid index";
+const string cSuffixInvalidColumnType = "invalid column type";
 
 class Column{
 public:
@@ -62,8 +63,6 @@ public:
 		InOut::Write(os, _active);
 		
 		int st = static_cast<int>(_scaleType);
-		//Function f("message");
-		//f(st);
 		InOut::Write(os, st);
 	}
 	virtual void read(ifstream& is) {
@@ -72,8 +71,6 @@ public:
 		
 		int st;
 		InOut::Read(is, st);
-		//Function f("message");
-		//f(st);
 		_scaleType = static_cast<SCALE_TYPE>(st);
 	}
 	

@@ -19,7 +19,7 @@ None
 \description{
 Read a data model and generative data from files,
 analyze the contained neural network in the data model for a level,
-determine metric subspaces with density values above the level,
+determine metric subspaces with density values above a level,
 add obtained metric subspaces to the data model
 and write it to original file.
 }

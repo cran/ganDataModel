@@ -194,14 +194,6 @@ public:
     void addMetricSubspaceEntries(VolumeElementGraph& volumeElementGraph, MetricSubspaceRelation& metricSubspaceRelation) {
         for(int i = 0; i < (int)volumeElementGraph.getMetricSubspaces().size(); i++) {
             if(volumeElementGraph.getMetricSubspacePositve(i, true)) {
-                vector<int>& metricSubspaceElementIndices = volumeElementGraph.getMetricSubspaces()[i].getMetricSubspaceElementIndices();
-                int metricSubspaceElementIndex = metricSubspaceElementIndices[0];
-            
-                vector<int>& volumeElementIndices = volumeElementGraph.getMetricSubspaceElements()[metricSubspaceElementIndex].getVolumeElementIndices();
-                int volumeElementIndex = volumeElementIndices[0];
-                vector<int>& volumeElementGenerativeDataIndices = volumeElementGraph.getVolumeElements()[volumeElementIndex].getGenerativeDataIndices();
-                int generativeDataIndex = volumeElementGenerativeDataIndices[0];
-            
                 MetricSubspaceEntry metricSubspaceEntry(volumeElementGraph.getLevel(), i, volumeElementGraph.getMetricSubspaceSize(i));                
                 metricSubspaceRelation.getMetricSubspaceEntries().push_back(metricSubspaceEntry);
             }
@@ -237,7 +229,7 @@ public:
             VolumeElementGraph& lVolumeElementGraph = _volumeElementGraphs[lLevelIndex];
             addMetricSubspaceEntries(lVolumeElementGraph, _metricSubspaceRelation);
             
-            if(i < orderedLevels.size() - 1) {
+            if(i < (int)orderedLevels.size() - 1) {
                 int rLevelIndex = getLevelIndex(orderedLevels[i + 1]);
                 VolumeElementGraph& rVolumeElementGraph = _volumeElementGraphs[rLevelIndex];
                 addMetricSubspaceRelationEntries(lVolumeElementGraph, rVolumeElementGraph, _metricSubspaceRelation);
@@ -259,7 +251,7 @@ public:
     }
 
     vector<int> getMetricSubspaceIndices(float level) {
-        int levelIndex = getLevelIndex(level);
+        //int levelIndex = getLevelIndex(level);
         vector<int> metricSubspaceIndices;
         for(int i = 0; i < (int)_metricSubspaceRelation.getMetricSubspaceEntries().size(); i++) {
             MetricSubspaceEntry& metricSubspaceEntry = _metricSubspaceRelation.getMetricSubspaceEntries()[i];
@@ -270,10 +262,10 @@ public:
         return metricSubspaceIndices;
     }
     vector<int> getMetricSubspaceIndices(float level, const vector<string>& labels) {
-        int levelIndex = getLevelIndex(level);
+        //int levelIndex = getLevelIndex(level);
       
         set<string> labelSet;
-        for(int i = 0; i < labels.size(); i++) {
+        for(int i = 0; i < (int)labels.size(); i++) {
             labelSet.insert(labels[i]);
         }
         vector<int> metricSubspaceIndices;

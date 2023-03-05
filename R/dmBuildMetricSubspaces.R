@@ -4,7 +4,7 @@
 library(tensorflow)
 library(Rcpp)
 
-Sys.setenv("PKG_CXXFLAGS"="-std=c++11")
+Sys.setenv("PKG_CXXFLAGS"="-std=c++17")
 sourceCpp("src/dmInt.cpp")
 source("R/dmEvaluate.R")
 
@@ -46,7 +46,7 @@ dmAddVolumeElements <- function(level) {
 #' 
 #' Read a data model and generative data from files,
 #' analyze the contained neural network in the data model for a level,
-#' determine metric subspaces with density values above the level,
+#' determine metric subspaces with density values above a level,
 #' add obtained metric subspaces to the data model
 #' and write it to original file.
 #'
@@ -61,6 +61,8 @@ dmAddVolumeElements <- function(level) {
 #' \dontrun{
 #' dmBuildMetricSubspaces("dm.bin", 0.7, "gd.bin")}
 dmBuildMetricSubspaces <- function(dataModelFileName, level, generativeDataFileName) {
+  start <- Sys.time()
+  
   dmReset()
 
   dmRead(dataModelFileName, generativeDataFileName)
@@ -68,15 +70,18 @@ dmBuildMetricSubspaces <- function(dataModelFileName, level, generativeDataFileN
   dmProgress("Step 1 of 3", dmGetNormalizedSize())
   dmAddVolumeElements(level)
   dmBuildVolumeElements()
-  
+
   dmProgress("Step 2 of 3")
   dmBuildVolumeElementTree()
-  
+
   dmProgress("Step 3 of 3")
   dmBuildVolumeElementGraph()
   dmBuildMetricSubspacesSub()
   dmAddVolumeElementGraph()
-  dmWrite(dataModelFileName)  
+  dmWrite(dataModelFileName)
+
+  end <- Sys.time()
+  message(round(difftime(end, start, units = "secs"), 3), " seconds")
 }
 
 #' Remove metric subspaces for a level

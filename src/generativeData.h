@@ -19,7 +19,7 @@ public:
 		_typeId = cGenerativeDataSourceTypeId;
 	}
 	GenerativeData(const DataSource& dataSource) {
-		_typeId = cGenerativeDataSourceTypeId;
+	   	_typeId = cGenerativeDataSourceTypeId;
 		_normalized = dataSource.getNormalized();
 
 		for(int i = 0; i < (int)dataSource.getColumnVector().size(); i++) {
@@ -27,7 +27,6 @@ public:
 				continue;
 			}
 			Column::COLUMN_TYPE columnType = ((dataSource.getColumnVector())[i])->getColumnType();
-			Column::SCALE_TYPE scaleType = ((dataSource.getColumnVector())[i])->getScaleType();
 			if(columnType == Column::NUMERICAL) {
 				const NumberColumn* pNumberColumn = dynamic_cast<const NumberColumn*>(dataSource.getColumnVector()[i]);
 				_columnVector.push_back(new NumberColumn(*pNumberColumn));
@@ -35,7 +34,11 @@ public:
 				throw string(cInvalidColumnType);
 			}
 		}
+		
+		delete _pDensityVector;
+		_pDensityVector = new NumberColumn(*dataSource.getDensityVector());
 	}
+
 	void addValueLine(const vector<float>& valueVector, int offset = 0) {
 		int index = offset;
 		for(int i = 0; i < (int)_columnVector.size(); i++) {
@@ -66,17 +69,18 @@ public:
 		}
 	}
     
-    void read(ifstream& is) {
-        InOut::Read(is, _typeId);
-        if(_typeId != cGenerativeDataSourceTypeId) {
-            throw string(cInvalidTypeId);
-        }
-        
-        readWithoutTypeId(is);
-        
-        buildNormalizedNumberVectorVector();
-    }
+	void read(ifstream& is) {
+		InOut::Read(is, _typeId);
+		if(_typeId != cGenerativeDataSourceTypeId) {
+			throw string(cInvalidTypeId);
+		}
 
+		readWithoutTypeId(is);
+		
+		buildNormalizedNumberVectorVector();
+		_uniformIntDistribution.setParameters(0, getNormalizedSize() - 1);
+	}
+    
 private:
 };
 
