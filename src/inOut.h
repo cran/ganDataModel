@@ -183,7 +183,7 @@ public:
 	static void Read(ifstream& is, map<int, wstring>& x) {
 		int size = x.size();
 		Read(is, size);
-		int k;
+		int k = 0;
 		for(int i = 0; i < (int)size; i++) {
 			Read(is, k);
 			Read(is, x[k]);

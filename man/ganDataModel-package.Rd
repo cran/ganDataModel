@@ -12,7 +12,7 @@ Properties of built metric subspaces:
 
 1. They contain data with continously varying density values above a level.\cr
 2. They have the topological property connected. In topology a space is connected when it cannot be represented as the union of disjoint open subspaces.\cr
-3. An inclusion relation is defined by levels: Higher level metric subspcaes are contained in lower level ones. 
+3. An inclusion relation is defined on them by levels. Higher level metric subspaces are contained in lower level ones. 
 
 The inserted images show two-dimensional projections of generative data contained in metric subspaces with assigned labels for the iris dataset.\cr
 \cr
@@ -30,7 +30,7 @@ The inserted images show two-dimensional projections of generative data containe
 \if{latex}{\figure{dm34c.png}}
 }
 \details{
-The API includes  main functions \code{dmTrain()} and \code{dmBuildMetricSubspaces()}. \code{dmTrain()} trains a neural network that approximates density values for a data source. \code{dmBuildMetricSubspaces()} analyzes the trained neural network for a level and determines metric subspaces with density values above the level. The API is used as follows:\cr
+The API includes  main functions \code{dmTrain()} and \code{dmBuildMetricSubspaces()}. \code{dmTrain()} trains a neural network that approximates density values for a data source. \code{dmBuildMetricSubspaces()} analyzes the trained neural network for a level and determines metric subspaces with density values above a level. The API is used as follows:\cr
 
 \strong{1. Prerequisite for building a metric subspaces data model: Create a data source, generate generative data and calculate density values using package \pkg{ganGenerativeData}}\cr
 
@@ -52,7 +52,7 @@ create a data model containing the trained neural network and write it to a file
 
 \strong{\code{dmBuildMetricSubspaces()}} Read a data model and generative data from files,
 analyze the trained neural network in the data model for a level,
-determine metric subspaces with density values above the level,
+determine metric subspaces with density values above a level,
 add obtained metric subspaces to the data model and write it to original file.\cr
 
 \strong{\code{dmRemoveMetricSubspaces()}} Remove metric subspaces in a data model for a level.\cr

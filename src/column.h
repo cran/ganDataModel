@@ -69,7 +69,7 @@ public:
 		InOut::Read(is, _name);
 		InOut::Read(is, _active);
 		
-		int st;
+		int st = 0;
 		InOut::Read(is, st);
 		_scaleType = static_cast<SCALE_TYPE>(st);
 	}
