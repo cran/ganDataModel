@@ -1,4 +1,4 @@
-06efa63a343ec3e81e4c438a07090f83 *DESCRIPTION
+fbd9e056b2e45f93e68f323597f7d267 *DESCRIPTION
 16a570cb62c42f5032dc15a7a14d4946 *NAMESPACE
 15d32bdd2cc89511c6733093208a1535 *R/RcppExports.R
 6f4019734a4c1f1994804d5348ab7306 *R/dmBuildMetricSubspaces.R
@@ -21,9 +21,8 @@ e31b5f474bb35ac77c19b851198cf6c1 *man/figures/dm12.png
 7b74605a1929b98a3bae675caf93164e *man/figures/dm12c.png
 8abfcb7825bff018db2247de059afbb0 *man/figures/dm34.png
 c51622e614091e7e77a6d2221e3ce4c0 *man/figures/dm34c.png
-d97a9f96f43ca50a910368904d93bf20 *man/ganDataModel-package.Rd
-63e20be0f862d6ae39ccc3eeef8bd5fb *src/CopyOfvolumeElementGraph.h
-77cf71e7725a5b15fb3dee6c1c886583 *src/Makevars
+20da1c5d7e074edc4051c00a61c66b6c *man/ganDataModel-package.Rd
+daf246d2559a7df53698b1714f020b7a *src/Makevars
 a70efb6a3a6cc595b50ed5357c08244d *src/RcppExports.cpp
 b6d3c882c3e58fe2337f43676e468b71 *src/column.h
 6c4c96a8ec8baf739a5ea3d0472027df *src/dataModel.h

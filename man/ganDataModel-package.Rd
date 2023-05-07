@@ -90,7 +90,7 @@ Package 'ganGenerativeData' <https://cran.r-project.org/package=ganGenerativeDat
 # Compiler: g++ 11.3.0 (supports C++17 standard)
 # R applications: R 4.1.2, RStudio 2022.02.2
 # Installed packages: 'Rcpp' 1.0.11, 'tensorflow' 2.11.0,
-# 'ganGenerativeData' 1.4.2, 'ganDataModel' 1.1.2
+# 'ganGenerativeData' 1.4.3, 'ganDataModel' 1.1.4
 
 # Package 'tensorflow' provides an interface to machine learning framework
 # TensorFlow. To complete the installation function install_tensorflow() has to
