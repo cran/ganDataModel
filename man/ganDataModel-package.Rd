@@ -10,7 +10,7 @@ Neural networks are applied to create a density value function which approximate
 
 Properties of built metric subspaces:
 
-1. They contain data with continously varying density values above a level.\cr
+1. They contain data with continuously varying density values above a level.\cr
 2. They have the topological property connected. In topology a space is connected when it cannot be represented as the union of disjoint open subspaces.\cr
 3. An inclusion relation is defined on them by levels. Higher level metric subspaces are contained in lower level ones. 
 
@@ -90,7 +90,7 @@ Package 'ganGenerativeData' <https://cran.r-project.org/package=ganGenerativeDat
 # Compiler: g++ 11.3.0 (supports C++17 standard)
 # R applications: R 4.1.2, RStudio 2022.02.2
 # Installed packages: 'Rcpp' 1.0.11, 'tensorflow' 2.11.0,
-# 'ganGenerativeData' 1.4.3, 'ganDataModel' 1.1.4
+# 'ganGenerativeData' 1.5.5, 'ganDataModel' 1.1.4
 
 # Package 'tensorflow' provides an interface to machine learning framework
 # TensorFlow. To complete the installation function install_tensorflow() has to
@@ -121,12 +121,11 @@ dsDeactivateColumns(c(5))}
 \dontrun{
 dsWrite("ds.bin")}
 
-# Read data source from file "ds.bin",
-# generate generative data in iterative training steps (in tests 50000
-# iterations and 1024 hidden layer units are used)) and write generated
-# generative data to file "gd.bin".
+# Read data source from file "ds.bin", train a generative model in iterative
+# training steps (in tests 50000 iterations are used), write trained generative
+# model and generated data in training steps to files "gm.bin" and "gd.bin".
 \dontrun{
-gdGenerate("gd.bin", "ds.bin", c(1, 2), gdGenerateParameters(2000))}
+gdTrain("gm.bin", "gd.bin", "ds.bin", c(1, 2), gdTrainParameters(2000))}
 # Read generative data from file "gd.bin", calculate density values and
 # write generative data with density values to original file.
 \dontrun{
@@ -160,7 +159,7 @@ dmRead("dm.bin", "gd.bin")}
 
 # Create an image showing a two-dimensional projection of generative data
 # contained in metric subspaces fpr level 0.67 for column indices 3, 4 and write
-# it to file "ms.png"
+# it to file "ms.png".
 \dontrun{
 dmPlotMetricSubspaces(
   list(dmPlotMetricSubspaceParameters(level = 0.67,
@@ -192,7 +191,7 @@ dmRead("dm.bin", "gd.bin")}
 
 # Create an image showing a two-dimensional projection of generative data
 # contained in metric subspaces for levels 0.67, 0.71 for column indices 3, 4
-# and write it to file "msls.png"
+# and write it to file "msls.png".
 \dontrun{
 dmPlotMetricSubspaces(
   list(dmPlotMetricSubspaceParameters(level = 0.67,
