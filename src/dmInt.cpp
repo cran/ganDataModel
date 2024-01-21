@@ -82,6 +82,8 @@ void dmResetSub() {
         
         delete dmInt::pProgress;
         dmInt::pProgress = 0;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -91,6 +93,8 @@ void dmResetSub() {
 int dmGetBatchSize() {
     try {
         return dmInt::batchSize;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -100,6 +104,8 @@ int dmGetBatchSize() {
 int dmGetMaxSize() {
     try {
         return dmInt::maxSize;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -118,6 +124,8 @@ void dmDataSourceRead(const std::string& inFileName) {
         dmInt::pDataSource = new DataSource();
         dmInt::pDataSource->read(is);
         is.close();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -140,6 +148,8 @@ void dmGenerativeDataRead(const std::string& inFileName) {
         if(dmInt::pGenerativeData->getNormalizedSize() > dmInt::maxSize) {
             throw string(dmInt::cMaxSizeExceeded);
         }
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -154,6 +164,8 @@ std::vector<float> dmDataSourceGetNormalizedDataRandom(int rowCount) {
     
         std::vector<float> v = dmInt::pDataSource->getNormalizedDataRandom(rowCount);
         return v;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -180,6 +192,8 @@ std::vector<std::vector<float>> dmDataSourceGetDataRandom(float percent) {
         }
     
         return v;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -194,6 +208,8 @@ std::vector<float> dmGenerativeDataGetNormalizedDataRandom(int rowCount) {
     
         std::vector<float> v = ((DataSource*)dmInt::pGenerativeData)->getNormalizedDataRandom(rowCount);
         return v;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -208,6 +224,8 @@ std::vector<std::vector<float>> dmGenerativeDataGetNormalizedDataRandomWithDensi
     
         vector<vector<float>> v = dmInt::pGenerativeData->getNormalizedDataRandomWithDensities(rowCount);
         return v;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -222,6 +240,8 @@ std::vector<float> dmEvaluateCopyDataSourceGetNormalizedData(int row, int rowCou
     
         std::vector<float> v = dmInt::pEvaluateCopyDataSource->getNormalizedData(row - 1, rowCount);
         return v;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -235,6 +255,8 @@ int dmGetDataSourceDimension() {
         }
     
         return dmInt::pDataModel->getDataSource().getDimension();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -248,6 +270,8 @@ int dmGetGenerativeDataDimension() {
         }
     
         return dmInt::pGenerativeData->getDimension();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -261,6 +285,8 @@ int dmGetNormalizedSize() {
         }
     
         return dmInt::pGenerativeData->getNormalizedSize();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -274,6 +300,8 @@ int dmGetEvaluateCopyDataSourceNormalizedSize() {
         }
     
         return dmInt::pEvaluateCopyDataSource->getNormalizedSize();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -283,6 +311,8 @@ int dmGetEvaluateCopyDataSourceNormalizedSize() {
 std::string dmBuildFileName(const std::string& fileName, const std::string& extension) {
     try {
         return BuildFileName()(GetFileName()(fileName), extension);
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -302,6 +332,8 @@ void dmWriteWithReadingTrainedModel(const std::string& outFileName) {
     
         dmInt::pDataModel->writeWithReadingTrainedModel(os, GetFileName()(outFileName));
         os.close();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -322,6 +354,8 @@ void dmWrite(const std::string& outFileName) {
     
         dmInt::pDataModel->write(os, GetFileName()(outFileName));
         os.close();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -341,6 +375,8 @@ void dmReadDataModel(const std::string& inFileName) {
     
         dmInt::pDataModel->read(is, GetFileName()(inFileName));
         is.close();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -366,6 +402,8 @@ void dmEvaluateDataSourceRead(const std::string& inFileName) {
     
         NormalizeData normalizeData;
         normalizeData.normalize(*dmInt::pEvaluateCopyDataSource, false);
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -383,6 +421,8 @@ std::vector<std::vector<float>> dmGetEvaluateCopyDataSourceNormalizedData(int ro
         v[1] = dmInt::pEvaluateCopyDataSource->getDenormalizedData(row - 1, rowCount);
         
         return v;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -396,6 +436,8 @@ std::vector<float> dmGetEvaluateCopyDataSourceDenormalizedData(int row, int rowC
         }
     
         return dmInt::pEvaluateCopyDataSource->getDenormalizedData(row - 1, rowCount);
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -414,6 +456,8 @@ std::vector<std::wstring> dmGetNumberVectorIndexNames(std::vector<int>& numberVe
         }
         vector<wstring> numberVectorIndexNames = dmInt::pGenerativeData->getNumbeVectorIndexNames(indexVector);
         return numberVectorIndexNames;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -423,6 +467,8 @@ std::vector<std::wstring> dmGetNumberVectorIndexNames(std::vector<int>& numberVe
 std::string dmGetValue(float level) {
     try {
         return GetValue()(level);
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -436,6 +482,8 @@ std::vector<float> dmGenerativeDataGetNormalizedData(int row, int rowCount) {
         }
         std::vector<float> v = ((DataSource*)dmInt::pGenerativeData)->getNormalizedData(row - 1, rowCount);
         return v;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -461,6 +509,8 @@ List dmGetRow(int index) {
             }
         }
         return list;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -479,6 +529,8 @@ void dmReadVolumeElementGraph(const std::string& inFileName) {
         dmInt::pVolumeElementGraph = new VolumeElementGraph();
         dmInt::pVolumeElementGraph->read(is);
         is.close();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -499,6 +551,8 @@ void dmWriteVolumeElementGraph(const std::string& outFileName) {
   
         dmInt::pVolumeElementGraph->write(os);
         os.close();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -512,6 +566,8 @@ void dmAddVolumeElementsSub(std::vector<float>& volumeElementValues, std::vector
         }
     
         dmInt::pVolumeElementGraph->addVolumeElements(volumeElementValues, dimensions, indexBegin - 1, level, dmInt::pProgress);
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -528,6 +584,8 @@ void dmBuildVolumeElements() {
         }
     
         dmInt::pVolumeElementGraph->buildVolumeElements();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -544,6 +602,8 @@ void dmBuildVolumeElementTree() {
         }
     
         dmInt::pVolumeElementGraph->buildVolumeElementTree(dmInt::pProgress);
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -563,6 +623,8 @@ void dmBuildVolumeElementGraph() {
         }
     
         dmInt::pVolumeElementGraph->buildVolumeElementGraphIterative(dmInt::nNearestNeighborDistances, dmInt::nNearestNeighbors, dmInt::buildGraphIterations, true, dmInt::pProgress);
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -598,6 +660,8 @@ void dmAddVolumeElementGraph() {
         
         delete dmInt::pVolumeElementGraph;
         dmInt::pVolumeElementGraph = 0;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -616,6 +680,8 @@ int dmBuildMetricSubspacesSub() {
     
         int c = dmInt::pVolumeElementGraph->buildMetricSubspaces(dmInt::minMetricSubspaceSize);
         return c;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -640,6 +706,8 @@ std::vector<std::vector<float>> dmGetGenerativeDataRandom(float percent) {
             v[1].insert(v[1].end(), numberVector.begin(), numberVector.end());
         }
         return v;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -670,6 +738,8 @@ std::vector<float> dmGetMetricSubspaceDenormalizedGenerativeData(float level, in
         }
         
         return metricSubspaceData;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -692,6 +762,8 @@ std::vector<int> dmGetMetricSubspaceIndices(float level, std::vector<std::string
         }
     
         return metricSubspacesIndices;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -721,6 +793,8 @@ List dmGetAdjacentVolumeElementIndices(int index) {
         }
     
         return list;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -748,6 +822,8 @@ float dmGetMax(int i) {
             throw string(cInvalidColumnType);
         }
         return max;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -775,6 +851,8 @@ float dmGetMin(int i) {
             throw string(cInvalidColumnType);
         }
         return min;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -799,6 +877,8 @@ std::vector<float> dmGetLevels() {
         }
 
         return dmInt::pDataModel->getLevels();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -835,7 +915,9 @@ List dmGetMetricSubspaceProperties(float level) {
                 levelMetricSubspaceList.insert(levelMetricSubspaceList.end(), levelMetricSubspace);
             }
         }
-        return levelMetricSubspaceList;    
+        return levelMetricSubspaceList;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -849,6 +931,8 @@ void dmRemoveMetricSubspacesSub(float level) {
         }
 
         dmInt::pDataModel->removeMetricSubspaces(level);
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -872,6 +956,8 @@ std::vector<float> dmNormalizedDataRecord(List dataRecord) {
         vector<float> normalizedNumberVector = normalizeData.getNormalizedNumberVector(dmInt::pDataModel->getDataSource() , numberVector);
         
         return normalizedNumberVector;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -937,6 +1023,8 @@ List dmGetMetricSubspacesSub(List dataRecord, float level) {
         }
         
         return levelMetricSubspaceList;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -1025,6 +1113,8 @@ List dmMetricSubspaceLabelPointsSub(float lLevel, float rLevel, float percent, s
         metricSubspaceKeyPoints.insert(metricSubspaceKeyPoints.end(), metricSubspaceLabels);
         
         return metricSubspaceKeyPoints;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
@@ -1044,6 +1134,8 @@ std::vector<int> dmSortLevelIndices(std::vector<float>& levels) {
             sortedLevelIndices.push_back(levelIndexPairs[i].second);
         }
         return sortedLevelIndices;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
     } catch(...) {
         ::Rf_error("C++ exception (unknown reason)");
     }
