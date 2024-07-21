@@ -18,16 +18,38 @@ public:
 	GenerativeData() {
 		_typeId = cGenerativeDataSourceTypeId;
 	}
+    
 	GenerativeData(const DataSource& dataSource) {
 	   	_typeId = cGenerativeDataSourceTypeId;
-		_normalized = dataSource.getNormalized();
+		_normalized = true;
 
 		for(int i = 0; i < (int)dataSource.getColumnVector().size(); i++) {
 			if(!(dataSource.getColumnVector())[i]->getActive()) {
 				continue;
 			}
 			Column::COLUMN_TYPE columnType = ((dataSource.getColumnVector())[i])->getColumnType();
-			if(columnType == Column::NUMERICAL) {
+			Column::SCALE_TYPE scaleType = ((dataSource.getColumnVector())[i])->getScaleType();
+			if(columnType == Column::STRING) {
+			    if(scaleType == Column::NOMINAL) {
+			        const StringColumn* pStringColumn = dynamic_cast<const StringColumn*>(dataSource.getColumnVector()[i]);
+			        
+			        vector<wstring> columnNames;
+			        const map<int, wstring>& inverseValueMap = pStringColumn->getInverseValueMap();
+			        map<int, wstring>::const_iterator iter(inverseValueMap.begin());
+			        while(iter != inverseValueMap.end()) {
+			            columnNames.push_back(iter->second);
+			            iter++;
+			        }
+			        
+			        int dimension = pStringColumn->getDimension();
+			        NumberArrayColumn* pNumberArrayColumn = new NumberArrayColumn(Column::NUMERICAL_ARRAY, pStringColumn->getName(), dimension);
+			        pNumberArrayColumn->setColumnNames(columnNames);
+			        
+			        _columnVector.push_back(pNumberArrayColumn);
+			    } else {
+			        throw string(cInvalidScaleType);
+			    }
+			} else if(columnType == Column::NUMERICAL) {
 				const NumberColumn* pNumberColumn = dynamic_cast<const NumberColumn*>(dataSource.getColumnVector()[i]);
 				_columnVector.push_back(new NumberColumn(*pNumberColumn));
 			} else {
@@ -48,6 +70,10 @@ public:
 				NumberColumn* pNumberColumn = dynamic_cast<NumberColumn*>(_columnVector[i]);
 				pNumberColumn->addNormalizedValue(valueVector[index]);
 				dimension = pNumberColumn->getDimension();
+			} else if(type == Column::NUMERICAL_ARRAY) {
+			    NumberArrayColumn* pNumberArrayColumn = dynamic_cast<NumberArrayColumn*>(_columnVector[i]);
+			    pNumberArrayColumn->addNormalizedValue(valueVector, index);
+			    dimension = pNumberArrayColumn->getDimension();	
 			} else {
 				throw string(cInvalidColumnType);
 			}
@@ -59,6 +85,7 @@ public:
 			throw string(cInvalidIndex);
 		}
 	}
+
 	void addValueLines(const vector<float>& valueVector) {
 		int dimension = getDimension();
 		if(valueVector.size() % dimension != 0) {
@@ -82,6 +109,7 @@ public:
 	}
     
 private:
+	vector<uniform_int_distribution<int>*> _pRVector;
 };
 
 #endif

@@ -90,7 +90,7 @@ Package 'ganGenerativeData' <https://cran.r-project.org/package=ganGenerativeDat
 # Compiler: g++ 11.3.0 (supports C++17 standard)
 # R applications: R 4.1.2, RStudio 2022.02.2
 # Installed packages: 'Rcpp' 1.0.11, 'tensorflow' 2.11.0,
-# 'ganGenerativeData' 1.5.6, 'ganDataModel' 1.1.6
+# 'ganGenerativeData' 2.0.2, 'ganDataModel' 1.1.7
 
 # Package 'tensorflow' provides an interface to machine learning framework
 # TensorFlow. To complete the installation function install_tensorflow() has to
@@ -126,7 +126,7 @@ dsWrite("ds.bin")}
 # 50000), write trained generative model and generated data in training steps to
 # files "gm.bin" and "gd.bin".
 \dontrun{
-gdTrain("gm.bin", "gd.bin", "ds.bin", c(1, 2), gdTrainParameters(2000))}
+gdTrain("gm.bin", "gd.bin", "ds.bin", c(1, 2), gdTrainParameters(1000))}
 # Read generative data from file "gd.bin", calculate density values and
 # write generative data with density values to original file.
 \dontrun{
@@ -165,7 +165,7 @@ dmRead("dm.bin", "gd.bin")}
 dmPlotMetricSubspaces(
   list(dmPlotMetricSubspaceParameters(level = 0.67,
                                        labels = c("*"),
-                                       percent = 75,
+                                       percent = 100,
                                        boundary = TRUE,
                                        color = "red",
                                        backgroundPercent = 0,
@@ -197,7 +197,7 @@ dmRead("dm.bin", "gd.bin")}
 dmPlotMetricSubspaces(
   list(dmPlotMetricSubspaceParameters(level = 0.67,
                                        labels = c("*"),
-                                       percent = 75,
+                                       percent = 100,
                                        boundary = TRUE,
                                        color = "red",
                                        backgroundPercent = 0,
@@ -206,7 +206,7 @@ dmPlotMetricSubspaces(
                                        plotLabels = TRUE),
        dmPlotMetricSubspaceParameters(level = 0.71,
                                        labels = c("*"),
-                                       percent = 75,
+                                       percent = 100,
                                        boundary = TRUE,
                                        color = "green",
                                        backgroundPercent = 5,

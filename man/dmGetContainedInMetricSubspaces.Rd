@@ -18,5 +18,5 @@ Determine in which metric subspaces in a data model a data record is contained.
 \examples{
 \dontrun{
 dmRead("dm.bin", "gd.bin")
-dmGetContaineInMetricSubspaces(list(4.4, 2.9, 1.4, 0.3))}
+dmGetContainedInMetricSubspaces(list(4.4, 2.9, 1.4, 0.3))}
 }

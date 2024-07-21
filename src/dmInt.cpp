@@ -219,7 +219,7 @@ std::vector<float> dmGenerativeDataGetNormalizedDataRandom(int rowCount) {
 std::vector<std::vector<float>> dmGenerativeDataGetNormalizedDataRandomWithDensities(int rowCount) {
     try {
         if(dmInt::pGenerativeData == 0) {
-            throw string("No data source");
+            throw string("No generative model");
         }
     
         vector<vector<float>> v = dmInt::pGenerativeData->getNormalizedDataRandomWithDensities(rowCount);

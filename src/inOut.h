@@ -10,6 +10,9 @@
 
 using namespace std;
 
+//const string cSeparator = "_";
+//const string cPeriod = ".";
+
 class InOut {
 public:
 	static void Write(ofstream& os, const bool& x) {
@@ -189,7 +192,7 @@ public:
 			Read(is, x[k]);
 		}
 	}
-    
+
     static void Write(ofstream& os, const vector<bool>& x) {
         vector<unsigned char> v;
         for(int i = 0; i < (int)x.size(); i+=8) {

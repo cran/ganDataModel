@@ -118,7 +118,7 @@ dmRemoveMetricSubspaces <- function(dataModelFileName, level) {
 #' @examples
 #' \dontrun{
 #' dmRead("dm.bin", "gd.bin")
-#' dmGetContaineInMetricSubspaces(list(4.4, 2.9, 1.4, 0.3))}
+#' dmGetContainedInMetricSubspaces(list(4.4, 2.9, 1.4, 0.3))}
 dmGetContainedInMetricSubspaces <- function(dataRecord) {
   l <- dmCalculateDensityValue(dataRecord)
   levelMetricSubspaces <- dmGetMetricSubspacesSub(dataRecord, l)

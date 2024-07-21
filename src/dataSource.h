@@ -11,6 +11,7 @@
 
 #include "numberColumn.h"
 #include "stringColumn.h"
+#include "numberArrayColumn.h"
 
 using namespace std;
 
@@ -23,7 +24,6 @@ const string cInvalidDimension = "Invalid dimension";
 const string cInvalidTypePrefix = "Type of occurred value";
 const string cInvalidTypeSuffix = "is invalid";
 const string cInvalidColumnPrefix = "Type of column";
-
 
 const string cDataSourceTypeId = "c46afa0e-51b6-4877-b4f4-53d909e34a7d";
 const wstring cDensityColumn = L"Densities";
@@ -288,6 +288,7 @@ public:
     
         wstring numberVectorIndexName = _columnVector[i]->getName();
         Column::COLUMN_TYPE type = _columnVector[i]->getColumnType();
+        /*
         if(type == Column::STRING) {
             StringColumn* pStringColumn = dynamic_cast<StringColumn*>(_columnVector[i]);
             int k = numberVectorIndex - j + 1;
@@ -298,8 +299,15 @@ public:
             }
             numberVectorIndexName += L".";
             numberVectorIndexName += inverseValueMapIter->second;
-        } else if(type == Column::NUMERICAL) {
+        } else
+        */
+        if(type == Column::NUMERICAL) {
             ;
+        } else if(type == Column::NUMERICAL_ARRAY) {
+            NumberArrayColumn* pNumberArrayColumn = dynamic_cast<NumberArrayColumn*>(_columnVector[i]);
+            int k = numberVectorIndex - j;
+            numberVectorIndexName += L".";
+            numberVectorIndexName += pNumberArrayColumn->getNumberColumnArray()[k].getName();
         } else {
             throw string(cInvalidColumnType);
         }
@@ -394,22 +402,6 @@ public:
         }
         return numberVector;
     }
-  
-    void getNormalizedDataRandomReference(vector<float>& numberVector, int rowCount) {
-        if(!_normalized) {
-            throw string(cDataSourceNotNormalized);
-        }
-      
-        vector<int> indexVector(rowCount, 0);
-        for(int i = 0; i < (int)indexVector.size(); i++) {
-            indexVector[i] = _uniformIntDistribution();
-        }
-        
-        for(int i = 0; i < rowCount; i++) {
-            vector<float>& rowNumberVector = getNormalizedNumberVectorReference((indexVector)[i]);
-            numberVector.insert(numberVector.end(), rowNumberVector.begin(), rowNumberVector.end());
-        }
-    }
 
     vector<vector<float>> getNormalizedDataRandomWithDensities(int rowCount) {
         vector<float> numberVector;
@@ -439,6 +431,22 @@ public:
         return numberVectorVector;
     }
     
+    void getNormalizedDataRandomReference(vector<float>& numberVector, int rowCount) {
+        if(!_normalized) {
+            throw string(cDataSourceNotNormalized);
+        }
+      
+        vector<int> indexVector(rowCount, 0);
+        for(int i = 0; i < (int)indexVector.size(); i++) {
+            indexVector[i] = _uniformIntDistribution();
+        }
+        
+        for(int i = 0; i < rowCount; i++) {
+            vector<float>& rowNumberVector = getNormalizedNumberVectorReference((indexVector)[i]);
+            numberVector.insert(numberVector.end(), rowNumberVector.begin(), rowNumberVector.end());
+        }
+    }
+
     vector<float> getNormalizedData(int row, int rowCount) {
         if(row < 0 || row > getNormalizedSize() - 1) {
             throw string(cInvalidIndex);
@@ -499,7 +507,7 @@ public:
 	}
 	void setColumnsActive(vector<int> indexVector, bool active) {
 		for(int i = 0; i < (int)indexVector.size(); i++) {
-		    if(indexVector[i] < 0 ||indexVector[i] > (int)_columnVector.size() - 1) {
+		    if(indexVector[i] < 0 || indexVector[i] > (int)_columnVector.size() - 1) {
 		        throw string(cInvalidIndex);  
 		    }
 			(_columnVector[indexVector[i]])->setActive(active);
@@ -552,6 +560,9 @@ public:
                 _columnVector[i]->read(is);
             } else if(type == Column::NUMERICAL) {
                 _columnVector[i] = new NumberColumn(type);
+                _columnVector[i]->read(is);
+            } else if(type == Column::NUMERICAL_ARRAY) {
+                _columnVector[i] = new NumberArrayColumn(type, 0);
                 _columnVector[i]->read(is);
             } else {
                 throw string(cInvalidColumnType);
