@@ -8,7 +8,8 @@ dmTrain(
   dataModelFileName,
   dataSourceFileName,
   generativeDataFileName,
-  numberOfIterations
+  numberOfIterations,
+  numberOfHiddenLayerUnits = 512
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ dmTrain(
 \item{generativeDataFileName}{Name of generative data file}
 
 \item{numberOfIterations}{Number of iterations.}
+
+\item{numberOfHiddenLayerUnits}{Number of hidden layer units}
 }
 \value{
 None
@@ -27,7 +30,7 @@ None
 Read a data source and generative data from files,
 train a neural network
 which approximates density values for a data source in iterative training steps,
-create a data model containing the trained neural network 
+create a data model containing the trained neural network
 and write it to a file in binary format.
 }
 \examples{

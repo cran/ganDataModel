@@ -10,31 +10,34 @@ source("R/dmEvaluate.R")
 
 dmAddVolumeElements <- function(level) {
   batchSize <- dmGetBatchSize()
-  
+  numberOfHiddenLayerUnits <- dmDataModelGetNumberOfHiddenLayerUnits()
+
   i <- 1
   while(i <= dmGetNormalizedSize()) {
     generativeData <- dmGenerativeDataGetNormalizedData(i, batchSize)
     r <- dmEvaluate(generativeData, TRUE)
-  
-    dl1Dimension <- dim(r[[1]])[2]
-    dl2Dimension <- dim(r[[2]])[2]
-    dl3Dimension <- dim(r[[3]])[2]
-    dl4Dimension <- dim(r[[4]])[2]
-    outDimension <- dim(r[[5]])[2]
-    
-    dimension <- dl1Dimension + dl2Dimension + dl3Dimension + dl4Dimension + outDimension
-    dimensions <- c(dl1Dimension, dl2Dimension, dl3Dimension, dl4Dimension, outDimension)
-    
+
+    r1 <- array(r[[1]], c(batchSize, numberOfHiddenLayerUnits))
+    r2 <- array(r[[2]], c(batchSize, numberOfHiddenLayerUnits))
+    r3 <- array(r[[3]], c(batchSize, 1L))
+
+    dl1Dimension <- dim(r1)[2]
+    dl2Dimension <- dim(r2)[2]
+    outDimension <- dim(r3)[2]
+
+    dimension <- dl1Dimension + dl2Dimension + outDimension
+    dimensions <- c(dl1Dimension, dl2Dimension, outDimension)
+
     volumeElementValues <- array(0, c(dimension * batchSize))
     j <- 1
     for(j in 1:batchSize) {
-      begin <- (j - 1) * dimension + 1
-      end <- j * dimension
-      volumeElementValues[begin:end] <- c(r[[1]][j,], r[[2]][j,], r[[3]][j,], r[[4]][j,], r[[5]][j,])
+        begin <- (j - 1) * dimension + 1
+        end <- j * dimension
+        volumeElementValues[begin:end] <- c(r1[j,], r2[j,], r3[j,])
     }
-  
+
     if(dmGetNormalizedSize() - i + 1 < batchSize) {
-      volumeElementValues  <- volumeElementValues [1:(dimension * (dmGetNormalizedSize() - i + 1))]
+        volumeElementValues  <- volumeElementValues [1:(dimension * (dmGetNormalizedSize() - i + 1))]
     }
     dmAddVolumeElementsSub(volumeElementValues, dimensions, i, level)
 
@@ -43,7 +46,7 @@ dmAddVolumeElements <- function(level) {
 }
 
 #' Build metric subspaces for a level
-#' 
+#'
 #' Read a data model and generative data from files,
 #' analyze the contained neural network in the data model for a level,
 #' determine metric subspaces with density values above a level,
@@ -59,10 +62,10 @@ dmAddVolumeElements <- function(level) {
 #'
 #' @examples
 #' \dontrun{
-#' dmBuildMetricSubspaces("dm.bin", 0.7, "gd.bin")}
+#' dmBuildMetricSubspaces("dm.bin", 0.5, "gd.bin")}
 dmBuildMetricSubspaces <- function(dataModelFileName, level, generativeDataFileName) {
   start <- Sys.time()
-  
+
   dmReset()
 
   dmRead(dataModelFileName, generativeDataFileName)
@@ -85,7 +88,7 @@ dmBuildMetricSubspaces <- function(dataModelFileName, level, generativeDataFileN
 }
 
 #' Remove metric subspaces for a level
-#' 
+#'
 #' Read a data model from file,
 #' remove metric subspaces in the data model for a level
 #' and write it to original file.
@@ -98,16 +101,16 @@ dmBuildMetricSubspaces <- function(dataModelFileName, level, generativeDataFileN
 #'
 #' @examples
 #' \dontrun{
-#' dmRemoveMetricSubspaces("dm.bin", 0.7)}
+#' dmRemoveMetricSubspaces("dm.bin", 0.5)}
 dmRemoveMetricSubspaces <- function(dataModelFileName, level) {
   dmReset()
   dmReadDataModel(dataModelFileName)
   dmRemoveMetricSubspacesSub(level)
-  dmWrite(dataModelFileName)  
+  dmWrite(dataModelFileName)
 }
 
 #' Get metric subspaces in which a data record is contained
-#' 
+#'
 #' Determine in which metric subspaces in a data model a data record is contained.
 #'
 #' @param dataRecord List of a data record
@@ -118,7 +121,7 @@ dmRemoveMetricSubspaces <- function(dataModelFileName, level) {
 #' @examples
 #' \dontrun{
 #' dmRead("dm.bin", "gd.bin")
-#' dmGetContainedInMetricSubspaces(list(4.4, 2.9, 1.4, 0.3))}
+#' dmGetContainedInMetricSubspaces(list(4.4, 2.9, 1.4, 0.2))}
 dmGetContainedInMetricSubspaces <- function(dataRecord) {
   l <- dmCalculateDensityValue(dataRecord)
   levelMetricSubspaces <- dmGetMetricSubspacesSub(dataRecord, l)

@@ -3,105 +3,148 @@
 
 library(tensorflow)
 library(Rcpp)
+
 Sys.setenv("PKG_CXXFLAGS"="-std=c++17")
 sourceCpp("src/dmInt.cpp")
+source("R/keras_zip_lists.R")
 
-dmTrainSub <- function(numberOfIterations, dataModelFileName) {
-  gdTf <- tf$compat$v1
-  gdTf$disable_v2_behavior()
+utils::globalVariables(c("tape"))
 
-  cNumberOfBatchesPerIteration <- 10  
-  cInitIterations <- -100
-  lr <- 0.0001
-  batchSize <- dmGetBatchSize()
-  dataDimension <- dmGetGenerativeDataDimension()
+dmTrainSub <- function(dataModelFileName, dataModelRead, numberOfTrainingIterations, numberOfHiddenLayerUnits) {
+    cWriteMessageModulo = 100
+    cNumberOfBatchesPerIteration <- 10
+    cNumberOfInitializationIterations <- 1000
 
-  gdTf$reset_default_graph()
-  
-  x <- gdTf$placeholder(tf$float32, shape = c(batchSize, dataDimension))
-  y <- gdTf$placeholder(tf$float32, shape = c(batchSize, 1L))
-  
-  discriminator <- function(x, hsize = c(512, 512), reuse=FALSE) {
-    with (gdTf$variable_scope('GAN/Discriminator', reuse=reuse), {
-      denseLayer1 <- gdTf$layers$dense(inputs = x, units = hsize[1], name = "dl1")
-      leakyRelu1 <- gdTf$nn$leaky_relu(denseLayer1)
+    batchSize <- dmGetBatchSize()
+    dataDimension <- dmGetGenerativeDataDimension()
+    cEpsilon <- 1.0e-10
+    learningRate <- 0.0001
 
-      denseLayer2 <- gdTf$layers$dense(inputs = leakyRelu1, units = hsize[2], name = "dl2")
-      leakyRelu2 <- gdTf$nn$leaky_relu(denseLayer2)
-
-      denseLayer3 <- gdTf$layers$dense(inputs = leakyRelu2, units = 1, name = "dl3")
-      leakyRelu3 <- gdTf$nn$leaky_relu(denseLayer3)
-
-      denseLayer4 <- gdTf$layers$dense(inputs = leakyRelu3, units = 1, name = "dl4")
-      leakyRelu4 <- gdTf$nn$leaky_relu(denseLayer4)
-
-      logits <- gdTf$layers$dense(inputs = leakyRelu4, units = 1, name = "l")
-    })
-    list(denseLayer1, denseLayer2, denseLayer3, denseLayer4, logits)
-  }
-  
-  discriminatorLayers <- discriminator(x, reuse = gdTf$AUTO_REUSE)
-
-  denseLayerIdentity <- function(denseLayer) {
-    r <- gdTf$identity(denseLayer)
-  }
-
-  denseLayer1 <- denseLayerIdentity(discriminatorLayers[[1]])
-  denseLayer2 <- denseLayerIdentity(discriminatorLayers[[2]])
-  denseLayer3 <- denseLayerIdentity(discriminatorLayers[[3]])
-  denseLayer4 <- denseLayerIdentity(discriminatorLayers[[4]])
-  logits <- denseLayerIdentity(discriminatorLayers[[5]])
-
-  loss <- function(logitsY, valuesY) {
-    r <- gdTf$reduce_mean(gdTf$square(logitsY - valuesY))
-  }
-  discriminatorLoss <- loss(logits, y)
-
-  vars = gdTf$get_collection(gdTf$GraphKeys$GLOBAL_VARIABLES, scope="GAN/Discriminator")
-  trainer <- gdTf$train$RMSPropOptimizer(lr)$minimize(discriminatorLoss, var_list = vars)
-  
-  init <- gdTf$global_variables_initializer()
-  session <- gdTf$Session()
-  session$run(init)
-  iteration <- 1
-  message("Iteration", "   ", "Mean square error")
-  
-  for(iteration in cInitIterations:numberOfIterations) {
-    r <- 1
-    for (i in 1:cNumberOfBatchesPerIteration) {
-      dataRandom <- dmGenerativeDataGetNormalizedDataRandomWithDensities(batchSize)
-
-      data <- array_reshape(dataRandom[1], c(batchSize, dataDimension))
-      densityValues <- array_reshape(dataRandom[2], c(batchSize, 1))
-
-      if(iteration < 1) {
-        data <- array_reshape(runif(batchSize * dataDimension, 0.0, 1.0), c(batchSize, dataDimension))
-        densityValues <- array_reshape(runif(batchSize, 0.0, 1.0), c(batchSize, 1))
-      }
-
-      r <- session$run(list(trainer, discriminatorLoss), feed_dict = dict(x = data, y = densityValues))
+    if(dataModelRead) {
+        numberOfHiddenLayerUnits = dmDataModelGetNumberOfHiddenLayerUnits()
     }
-    message(iteration, "   ", format(round(r[[2]], 6)))
-  }
 
-  saver <- gdTf$train$Saver()
-  dm <- dmBuildFileName(dataModelFileName, "")
-  saver$save(session, dm)
-  session$close()
+    numberOfHiddenLayerUnits <- as.integer(numberOfHiddenLayerUnits)
+
+    discriminatorHiddenLayer1 <- tf$keras$layers$Dense(units = numberOfHiddenLayerUnits, activation = tf$nn$leaky_relu)
+    discriminatorHiddenLayer2 <- tf$keras$layers$Dense(units = numberOfHiddenLayerUnits, activation = tf$nn$leaky_relu)
+    discriminatorLogits <- tf$keras$layers$Dense(units = 1L)
+
+    discriminatorOptimizer <- tf$keras$optimizers$RMSprop(learning_rate = learningRate, epsilon = cEpsilon)
+
+    checkPoint <- tf$train$Checkpoint(discriminatorHiddenLayer1 = discriminatorHiddenLayer1,
+                                      discriminatorHiddenLayer2 = discriminatorHiddenLayer2,
+                                      discriminatorLogits = discriminatorLogits,
+                                      discriminatorOptimizer = discriminatorOptimizer)
+
+    if(dataModelRead) {
+        checkPoint$read(dmGetFileName(dataModelFileName))
+    }
+
+    discriminatorNetwork <- function(input) {
+        discriminatorHiddenLayer1 <- discriminatorHiddenLayer1(input)
+        discriminatorHiddenLayer2 <- discriminatorHiddenLayer2(discriminatorHiddenLayer1)
+        logits <- discriminatorLogits(discriminatorHiddenLayer2)
+    }
+
+    loss <- function(logitsY, valuesY) {
+        r <- tf$reduce_mean(tf$square(logitsY - valuesY))
+    }
+
+    trainingCore <- tf_function(function(data, densityValues) {
+        with(tf$GradientTape(persistent = TRUE) %as% tape, {
+            logits <- discriminatorNetwork(data)
+            densityValuesFloat32 <- logits
+            densityValuesFloat32 <- tf$cast(densityValues, tf$float32)
+            discriminatorLoss <- loss(logits, densityValuesFloat32)
+        })
+
+        discriminatorVariables <- append(discriminatorHiddenLayer1$trainable_weights, discriminatorHiddenLayer2$trainable_weights)
+        discriminatorVariables <- append(discriminatorVariables, discriminatorLogits$trainable_weights)
+        discriminatorGradients <- tape$gradient(discriminatorLoss, discriminatorVariables)
+        discriminatorOptimizer$apply_gradients(keras_zip_lists(discriminatorGradients, discriminatorVariables))
+
+        loss <- list()
+        loss[[1]] <- discriminatorLoss
+
+        return(loss)
+    })
+
+    trainingIteration <- function(iteration, step) {
+        loss <- list()
+        loss[[1]] = 0
+        for(i in 1:cNumberOfBatchesPerIteration) {
+            dataRandom <- dmGenerativeDataGetNormalizedDataRandomWithDensities(batchSize)
+            data <- array_reshape(dataRandom[1], c(batchSize, dataDimension))
+            densityValues <- array_reshape(dataRandom[2], c(batchSize, 1))
+
+            if(step == "Initialize") {
+                data <- array(runif(batchSize * dataDimension, 0.0, 1.0), c(batchSize, dataDimension))
+            }
+
+            l <- trainingCore(data, densityValues)
+            loss[[1]] <- loss[[1]] + l[[1]]
+        }
+
+        loss[[1]] <- loss[[1]] / cNumberOfBatchesPerIteration
+        return(loss)
+    }
+
+    train <- function(dataModelFileName){
+        if(!dataModelRead) {
+            message("Initialization iteration   Loss")
+
+            for(iteration in 1:cNumberOfInitializationIterations) {
+                #loss <- trainingIteration(iteration)
+                loss <- trainingIteration(iteration, "Initialize")
+
+                if(iteration %% cWriteMessageModulo == 0) {
+                    message(iteration, "   ", format(round(as.numeric(loss[[1]]), 6)))
+                }
+            }
+        }
+
+        message("Training iteration   Loss")
+
+        for(iteration in 1:numberOfTrainingIterations) {
+            #loss <- trainingIteration(iteration)
+            loss <- trainingIteration(iteration, "Training")
+
+            if(iteration %% cWriteMessageModulo == 0) {
+                message(iteration, "   ", format(round(as.numeric(loss[[1]]), 6)))
+            }
+        }
+
+        if(!is.null(dataModelFileName) && nchar(dataModelFileName) > 0) {
+            if(dataModelRead) {
+                dmDataModelSetNumberOfTrainingIterations(dmDataModelGetNumberOfTrainingIterations() + numberOfTrainingIterations)
+            } else {
+                dmCreateGenerativeModel()
+                dmDataModelSetNumberOfTrainingIterations(numberOfTrainingIterations)
+                dmDataModelSetNumberOfHiddenLayerUnits(numberOfHiddenLayerUnits)
+            }
+
+            checkPoint$write(dmGetFileName(dataModelFileName))
+            dmWriteWithReadingTrainedModel(dataModelFileName)
+        }
+    }
+
+    train(dataModelFileName)
 }
 
 #' Train a neural network which approximates density values for a data source
-#' 
+#'
 #' Read a data source and generative data from files,
 #' train a neural network
 #' which approximates density values for a data source in iterative training steps,
-#' create a data model containing the trained neural network 
+#' create a data model containing the trained neural network
 #' and write it to a file in binary format.
 #'
 #' @param dataModelFileName Name of data model file
 #' @param dataSourceFileName Name of data source file
 #' @param generativeDataFileName Name of generative data file
 #' @param numberOfIterations Number of iterations.
+#' @param numberOfHiddenLayerUnits Number of hidden layer units
 #'
 #' @return None
 #' @export
@@ -109,14 +152,21 @@ dmTrainSub <- function(numberOfIterations, dataModelFileName) {
 #' @examples
 #' \dontrun{
 #' dmTrain("dm.bin", "ds.bin", "gd.bin", 10000)}
-dmTrain <- function(dataModelFileName, dataSourceFileName, generativeDataFileName, numberOfIterations) {
-  start <- Sys.time()
-    
-  dmDataSourceRead(dataSourceFileName)
-  dmGenerativeDataRead(generativeDataFileName)
-  dmTrainSub(numberOfIterations, dataModelFileName)
-  dmWriteWithReadingTrainedModel(dataModelFileName)
-  
-  end <- Sys.time()
-  message(round(difftime(end, start, units = "secs"), 3), " seconds")
+dmTrain <- function(dataModelFileName, dataSourceFileName, generativeDataFileName, numberOfIterations, numberOfHiddenLayerUnits = 512) {
+    start <- Sys.time()
+
+    dmDataSourceRead(dataSourceFileName)
+    dmGenerativeDataRead(generativeDataFileName)
+
+    dataModelRead <- FALSE
+    if(!is.null(dataModelFileName) && nchar(dataModelFileName) > 0) {
+        dataModelRead <- dmReadDataModel(dataModelFileName)
+    } else {
+        stop("No dataModelFileName specified")
+    }
+
+    dmTrainSub(dataModelFileName, dataModelRead, numberOfIterations, numberOfHiddenLayerUnits)
+
+    end <- Sys.time()
+    message(round(difftime(end, start, units = "secs"), 3), " seconds")
 }

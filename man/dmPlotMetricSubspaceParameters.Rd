@@ -45,5 +45,5 @@ A list of plot parameters is created for different levels and passed to dmPlotMe
 }
 \examples{
 \dontrun{
-dmPlotMetricSubspaceParameters(0.73)}
+dmPlotMetricSubspaceParameters(0.5)}
 }

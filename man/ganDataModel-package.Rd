@@ -12,7 +12,7 @@ Properties of built metric subspaces:
 
 1. They contain data with continuously varying density values above a level.\cr
 2. They have the topological property connected. In topology a space is connected when it cannot be represented as the union of disjoint open subspaces.\cr
-3. An inclusion relation is defined on them by levels. Higher level metric subspaces are contained in lower level ones. 
+3. An inclusion relation is defined on them by levels. Higher level metric subspaces are contained in lower level ones.
 
 The inserted images show two-dimensional projections of generative data contained in metric subspaces with assigned labels for the iris dataset.\cr
 \cr
@@ -86,11 +86,12 @@ Package 'ganGenerativeData' <https://cran.r-project.org/package=ganGenerativeDat
 \examples{
 # Environment used for execution of examples:
 
-# Operating system: Ubuntu 22.04.1
-# Compiler: g++ 11.3.0 (supports C++17 standard)
-# R applications: R 4.1.2, RStudio 2022.02.2
-# Installed packages: 'Rcpp' 1.0.11, 'tensorflow' 2.11.0,
-# 'ganGenerativeData' 2.0.2, 'ganDataModel' 1.1.7
+# Operating system: Ubuntu 24.04.3 LTS
+# Compiler: g++ 13.3.0 (supports C++17 standard)
+# Software: Python 3.12.3, TensorFlow 2.16.2
+# R environment: R 4.5.2, RStudio 2024.12.1
+# Installed packages: 'Rcpp' 1.1.0, 'tensorflow' 2.20.0,
+# 'ganGenerativeData' 2.1.6, 'ganDataModel' 2.0.0
 
 # Package 'tensorflow' provides an interface to machine learning framework
 # TensorFlow. To complete the installation function install_tensorflow() has to
@@ -151,7 +152,7 @@ dmTrain("dm.bin", "ds.bin", "gd.bin", 10000)}
 # add obtained metric subspaces to the data model
 # and write it to original file.
 \dontrun{
-dmBuildMetricSubspaces("dm.bin", 0.67, "gd.bin")}
+dmBuildMetricSubspaces("dm.bin", 0.38, "gd.bin")}
 
 # Read a data model and generative data from files "dm.bin" and "gd,bin".
 # Read in data is accessed in function dmPlotMetricSubspaces.
@@ -159,11 +160,11 @@ dmBuildMetricSubspaces("dm.bin", 0.67, "gd.bin")}
 dmRead("dm.bin", "gd.bin")}
 
 # Create an image showing a two-dimensional projection of generative data
-# contained in metric subspaces fpr level 0.67 for column indices 3, 4 and write
+# contained in metric subspaces fpr level 0.38 for column indices 3, 4 and write
 # it to file "ms.png".
 \dontrun{
 dmPlotMetricSubspaces(
-  list(dmPlotMetricSubspaceParameters(level = 0.67,
+  list(dmPlotMetricSubspaceParameters(level = 0.38,
                                        labels = c("*"),
                                        percent = 100,
                                        boundary = TRUE,
@@ -176,14 +177,14 @@ dmPlotMetricSubspaces(
   "Metric Subspaces for the Iris Dataset",
   c(3, 4),
   "ds.bin",
-  dmPlotEvaluateDataSourceParameters(0.67))}
+  dmPlotEvaluateDataSourceParameters(0.38))}
 
 # Read a data model and generative data from files "dm.bin" and "gd.bin",
-# build metric subspaces for level 0.71,
+# build metric subspaces for level 0.5,
 # add obtained metric subspaces to the data model
 # and write it to original file.
 \dontrun{
-dmBuildMetricSubspaces("dm.bin", 0.71, "gd.bin")}
+dmBuildMetricSubspaces("dm.bin", 0.5, "gd.bin")}
 
 # Read a data model and generative data from files "dm.bin" and "gd,bin".
 # Read in data is accessed in function dmPlotMetricSubspaces.
@@ -191,11 +192,11 @@ dmBuildMetricSubspaces("dm.bin", 0.71, "gd.bin")}
 dmRead("dm.bin", "gd.bin")}
 
 # Create an image showing a two-dimensional projection of generative data
-# contained in metric subspaces for levels 0.67, 0.71 for column indices 3, 4
+# contained in metric subspaces for levels 0.38, 0.5 for column indices 3, 4
 # and write it to file "msls.png".
 \dontrun{
 dmPlotMetricSubspaces(
-  list(dmPlotMetricSubspaceParameters(level = 0.67,
+  list(dmPlotMetricSubspaceParameters(level = 0.38,
                                        labels = c("*"),
                                        percent = 100,
                                        boundary = TRUE,
@@ -204,7 +205,7 @@ dmPlotMetricSubspaces(
                                        backgroundColor = "red",
                                        backgroundReset = TRUE,
                                        plotLabels = TRUE),
-       dmPlotMetricSubspaceParameters(level = 0.71,
+       dmPlotMetricSubspaceParameters(level = 0.5,
                                        labels = c("*"),
                                        percent = 100,
                                        boundary = TRUE,
@@ -212,10 +213,10 @@ dmPlotMetricSubspaces(
                                        backgroundPercent = 5,
                                        backgroundColor = "red",
                                        backgroundReset = TRUE,
-                                       plotLabels = TRUE)),                                       
+                                       plotLabels = TRUE)),
   "msls.png",
   "Metric Subspaces for the Iris Dataset",
   c(3, 4),
   "ds.bin",
-  dmPlotEvaluateDataSourceParameters(0.67))}
+  dmPlotEvaluateDataSourceParameters(0.38))}
 }

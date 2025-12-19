@@ -21,5 +21,5 @@ and write it to original file.
 }
 \examples{
 \dontrun{
-dmRemoveMetricSubspaces("dm.bin", 0.7)}
+dmRemoveMetricSubspaces("dm.bin", 0.5)}
 }

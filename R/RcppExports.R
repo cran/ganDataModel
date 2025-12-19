@@ -9,6 +9,10 @@ dmResetSub <- function() {
     invisible(.Call('_ganDataModel_dmResetSub', PACKAGE = 'ganDataModel'))
 }
 
+dmCreateGenerativeModel <- function() {
+    invisible(.Call('_ganDataModel_dmCreateGenerativeModel', PACKAGE = 'ganDataModel'))
+}
+
 dmGetBatchSize <- function() {
     .Call('_ganDataModel_dmGetBatchSize', PACKAGE = 'ganDataModel')
 }
@@ -61,6 +65,10 @@ dmGetEvaluateCopyDataSourceNormalizedSize <- function() {
     .Call('_ganDataModel_dmGetEvaluateCopyDataSourceNormalizedSize', PACKAGE = 'ganDataModel')
 }
 
+dmGetFileName <- function(fileName) {
+    .Call('_ganDataModel_dmGetFileName', PACKAGE = 'ganDataModel', fileName)
+}
+
 dmBuildFileName <- function(fileName, extension) {
     .Call('_ganDataModel_dmBuildFileName', PACKAGE = 'ganDataModel', fileName, extension)
 }
@@ -74,7 +82,7 @@ dmWrite <- function(outFileName) {
 }
 
 dmReadDataModel <- function(inFileName) {
-    invisible(.Call('_ganDataModel_dmReadDataModel', PACKAGE = 'ganDataModel', inFileName))
+    .Call('_ganDataModel_dmReadDataModel', PACKAGE = 'ganDataModel', inFileName)
 }
 
 dmEvaluateDataSourceRead <- function(inFileName) {
@@ -211,5 +219,21 @@ dmMetricSubspaceLabelPointsSub <- function(lLevel, rLevel, percent, columnIndice
 
 dmSortLevelIndices <- function(levels) {
     .Call('_ganDataModel_dmSortLevelIndices', PACKAGE = 'ganDataModel', levels)
+}
+
+dmDataModelGetNumberOfTrainingIterations <- function() {
+    .Call('_ganDataModel_dmDataModelGetNumberOfTrainingIterations', PACKAGE = 'ganDataModel')
+}
+
+dmDataModelSetNumberOfTrainingIterations <- function(numberOfTrainingIterations) {
+    invisible(.Call('_ganDataModel_dmDataModelSetNumberOfTrainingIterations', PACKAGE = 'ganDataModel', numberOfTrainingIterations))
+}
+
+dmDataModelGetNumberOfHiddenLayerUnits <- function() {
+    .Call('_ganDataModel_dmDataModelGetNumberOfHiddenLayerUnits', PACKAGE = 'ganDataModel')
+}
+
+dmDataModelSetNumberOfHiddenLayerUnits <- function(numberOfHiddenLayerUnits) {
+    invisible(.Call('_ganDataModel_dmDataModelSetNumberOfHiddenLayerUnits', PACKAGE = 'ganDataModel', numberOfHiddenLayerUnits))
 }
 

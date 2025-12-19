@@ -27,6 +27,8 @@ const string cInvalidLevel = "Invalid level";
 const string cDataModelTypeId = "2da979bc-77df-4e9e-9fb2-7916e02a001c";
 const string cWildCard = "*";
 
+const string cNotSupportedVersion = "Data model version 1 ist not supported";
+
 class TrainedModel {
 public:
     TrainedModel(): _separator(csSeparator), _period(cPeriod), _dataFileExtension(cDataFileExtension), _indexFileExtension(cIndexFileExtension), _metaFileExtension(cMetaFileExtension) {
@@ -35,21 +37,25 @@ public:
     void readVectors(const string& modelName) {
         readVector(BuildFileName()(modelName, _dataFileExtension), _dataVector);
         readVector(BuildFileName()(modelName, _indexFileExtension), _indexVector);
-        readVector(BuildFileName()(modelName, _metaFileExtension), _metaVector);
+        readVector(BuildFileName()(modelName, _metaFileExtension), _metaVector, true);
     }
     void writeVectors(const string& modelName) {
         writeVector(BuildFileName()(modelName, _dataFileExtension), _dataVector);
         writeVector(BuildFileName()(modelName, _indexFileExtension), _indexVector);
         writeVector(BuildFileName()(modelName, _metaFileExtension), _metaVector);
     }
-    
-    void readVector(const string& inFileName, vector<unsigned char>& dataVector) {
+
+    void readVector(const string& inFileName, vector<unsigned char>& dataVector, bool optional = false) {
         ifstream inFile;
         inFile.open(inFileName.c_str(), ios::binary | ios::ate);
         if(!inFile.is_open()) {
-            throw string("File could not be opened");
+            if(!optional) {
+                throw string("File could not be opened");
+            } else {
+                return;
+            }
         }
-        
+
         streamsize size = inFile.tellg();
         inFile.seekg(0, ios::beg);
         dataVector.resize(size, 0);
@@ -62,7 +68,7 @@ public:
         if(!outFile.is_open()) {
             throw string("File could not be opened");
         }
-        
+
         streamsize size = dataVector.size();
         outFile.write((char *)dataVector.data(), size);
         outFile.close();
@@ -77,16 +83,16 @@ public:
         InOut::Read(is, _indexVector);
         InOut::Read(is, _metaVector);
     }
-    
+
 private:
     string _dataFileName;
     string _indexFileNmae;
     string _metaFileName;
-    
+
     vector<unsigned char> _dataVector;
     vector<unsigned char> _indexVector;
     vector<unsigned char> _metaVector;
-    
+
     string _separator;
     string _period;
     string _dataFileExtension;
@@ -96,23 +102,26 @@ private:
 
 class DataModel {
 public:
-    DataModel(): _typeId(cDataModelTypeId), _version(1) {
+    DataModel(): _typeId(cDataModelTypeId), _version(2) {
     }
     DataModel(DataSource& dataSource): _typeId(cDataModelTypeId), _version(1), _dataSource(dataSource) {
     }
-    void writeWithReadingTrainedModel(ofstream& os, const string& modelName, int version = 1) {
+    void writeWithReadingTrainedModel(ofstream& os, const string& modelName, int version = 2) {
         _trainedModel.readVectors(modelName);
-        
+
         write(os, modelName, version);
     }
-    void write(ofstream& os, const string& modelName, int version = 1) {
+    void write(ofstream& os, const string& modelName, int version = 2) {
         InOut::Write(os, _typeId);
         InOut::Write(os, version);
-        
+
+        InOut::Write(os, _numberOfTrainingIterations);
+        InOut::Write(os, _numberOfHiddenLayerUnits);
+
         _dataSource.write(os);
-        
+
         _trainedModel.write(os);
-        
+
         int size = _volumeElementGraphs.size();
         InOut::Write(os, size);
         for(int i = 0; i < (int)_volumeElementGraphs.size(); i++) {
@@ -125,20 +134,26 @@ public:
             throw string(cInvalidTypeId);
         }
         InOut::Read(is, _version);
+        if(_version == 1) {
+            throw string(cNotSupportedVersion);
+        }
+
+        InOut::Read(is, _numberOfTrainingIterations);
+        InOut::Read(is, _numberOfHiddenLayerUnits);
 
         _dataSource.read(is);
 
         _trainedModel.read(is);
-        
+
         _trainedModel.writeVectors(modelName);
-        
+
         int size = 0;
         InOut::Read(is, size);
         _volumeElementGraphs.resize(size);
         for(int i = 0; i < (int)_volumeElementGraphs.size(); i++) {
             _volumeElementGraphs[i].read(is);
         }
-        
+
         buildMetricSubspaceRelation();
     }
     DataSource& getDataSource() {
@@ -150,13 +165,13 @@ public:
     vector<VolumeElementGraph>& getVolumeElementGraphs() {
         return _volumeElementGraphs;
     }
-    
+
     vector<float> getLevels() {
         vector<float> levels;
         for(int i = 0; i < (int)_volumeElementGraphs.size(); i++) {
             levels.push_back(_volumeElementGraphs[i].getLevel());
         }
-    
+
         sort(levels.begin(), levels.end());
         return levels;
     }
@@ -173,19 +188,19 @@ public:
         }
         return levelIndex;
     }
-    
+
     int getNumberOfMetricSubspaces(float level) {
         int levelIndex = getLevelIndex(level);
         int numberOfMetricSubspaces = _volumeElementGraphs[levelIndex].getNumberOfMetricSubspaces();
         return numberOfMetricSubspaces;
     }
-    
+
     void removeMetricSubspaces(float level) {
         for(int i = 0; i < (int)getVolumeElementGraphs().size(); i++) {
             if(getVolumeElementGraphs()[i].getLevel() == level) {
                 getVolumeElementGraphs()[i] = getVolumeElementGraphs()[getVolumeElementGraphs().size() - 1];
                 getVolumeElementGraphs().pop_back();
-                
+
                 buildMetricSubspaceRelation();
                 break;
             }
@@ -194,7 +209,7 @@ public:
     void addMetricSubspaceEntries(VolumeElementGraph& volumeElementGraph, MetricSubspaceRelation& metricSubspaceRelation) {
         for(int i = 0; i < (int)volumeElementGraph.getMetricSubspaces().size(); i++) {
             if(volumeElementGraph.getMetricSubspacePositve(i, true)) {
-                MetricSubspaceEntry metricSubspaceEntry(volumeElementGraph.getLevel(), i, volumeElementGraph.getMetricSubspaceSize(i));                
+                MetricSubspaceEntry metricSubspaceEntry(volumeElementGraph.getLevel(), i, volumeElementGraph.getMetricSubspaceSize(i));
                 metricSubspaceRelation.getMetricSubspaceEntries().push_back(metricSubspaceEntry);
             }
         }
@@ -204,7 +219,7 @@ public:
             if(rVolumeElementGraph.getMetricSubspacePositve(i, true)) {
                 vector<int>& rMetricSubspaceElementIndices = rVolumeElementGraph.getMetricSubspaces()[i].getMetricSubspaceElementIndices();
                 int rMetricSubspaceElementIndex = rMetricSubspaceElementIndices[0];
-            
+
                 vector<int>& rVolumeElementIndices = rVolumeElementGraph.getMetricSubspaceElements()[rMetricSubspaceElementIndex].getVolumeElementIndices();
                 int rVolumeElementIndex = rVolumeElementIndices[0];
                 vector<int>& rVolumeElementGenerativeDataIndices = rVolumeElementGraph.getVolumeElements()[rVolumeElementIndex].getGenerativeDataIndices();
@@ -212,30 +227,30 @@ public:
                 int lVolumeElementIndex = lVolumeElementGraph.getGenerativeDataVolumeElementIndices()[rGenerativeDataIndex];
                 int lVolumeElementSubspaceElementIndex = lVolumeElementGraph.getVolumeElements()[lVolumeElementIndex].getMetricSubspaceElementIndex();
                 int lMetricSubspaceIndex = lVolumeElementGraph.getMetricSubspaceElements()[lVolumeElementSubspaceElementIndex].getMetricSubspaceIndex();
-            
+
                 MetricSubspaceEntry lMetricSubspaceEntry(lVolumeElementGraph.getLevel(), lMetricSubspaceIndex, lVolumeElementGraph.getMetricSubspaceSize(lMetricSubspaceIndex));
                 MetricSubspaceEntry rMetricSubspaceEntry(rVolumeElementGraph.getLevel(), i, rVolumeElementGraph.getMetricSubspaceSize(i));
                 MetricSubspaceRelationEntry metricSubspaceRelationEntry(lMetricSubspaceEntry, rMetricSubspaceEntry);
                 metricSubspaceRelation.getMetricSubspaceRelationEntries().push_back(metricSubspaceRelationEntry);
             }
-        } 
+        }
     }
     void buildMetricSubspaceRelation() {
         _metricSubspaceRelation.clearMetricSubspaceRelation();
-        
+
         vector<float> orderedLevels = getLevels();
         for(int i = 0; i < (int)orderedLevels.size(); i++) {
             int lLevelIndex = getLevelIndex(orderedLevels[i]);
             VolumeElementGraph& lVolumeElementGraph = _volumeElementGraphs[lLevelIndex];
             addMetricSubspaceEntries(lVolumeElementGraph, _metricSubspaceRelation);
-            
+
             if(i < (int)orderedLevels.size() - 1) {
                 int rLevelIndex = getLevelIndex(orderedLevels[i + 1]);
                 VolumeElementGraph& rVolumeElementGraph = _volumeElementGraphs[rLevelIndex];
                 addMetricSubspaceRelationEntries(lVolumeElementGraph, rVolumeElementGraph, _metricSubspaceRelation);
             }
         }
-  
+
         _metricSubspaceRelation.sortMetricSubspaceEntries();
         //if(_metricSubspaceRelation.getMetricSubspaceRelationEntries().size() > 0) {
         //    _metricSubspaceRelation.createLabels(_metricSubspaceRelation.getMetricSubspaceRelationEntries()[0].getLMetricSubspaceEntry().getLevel());
@@ -263,7 +278,7 @@ public:
     }
     vector<int> getMetricSubspaceIndices(float level, const vector<string>& labels) {
         //int levelIndex = getLevelIndex(level);
-      
+
         set<string> labelSet;
         for(int i = 0; i < (int)labels.size(); i++) {
             labelSet.insert(labels[i]);
@@ -302,11 +317,11 @@ public:
         for(int i = 0; i < (int)metricSubspaceEntryIndices.size(); i++) {
             int metricSubspaceEntryIndex = metricSubspaceEntryIndices[i];
             float metricSubspaceIndex = _metricSubspaceRelation.getMetricSubspaceEntries()[metricSubspaceEntryIndex].getMetricSubspaceIndex();
-            
+
             float level = _metricSubspaceRelation.getMetricSubspaceEntries()[metricSubspaceEntryIndex].getLevel();
             int levelIndex = getLevelIndex(level);
             VolumeElementGraph& volumeElementGraph = getVolumeElementGraphs()[levelIndex];
-            
+
             vector<int> lGenerativeDataIndices = volumeElementGraph.getGenerativeDataVolumeElementIndices(metricSubspaceIndex, false);
             generativeDataIndices.insert(generativeDataIndices.end(), lGenerativeDataIndices.begin(), lGenerativeDataIndices.end());
         }
@@ -325,7 +340,7 @@ public:
             vector<int> rGenerativeDataIndices = getMetricSubspaceGenerativeDataIndices(metricSubspaceEntryIndices);
             generativeDataIndices.insert(generativeDataIndices.begin(), rGenerativeDataIndices.begin(), rGenerativeDataIndices.end());
         }
-  
+
         return generativeDataIndices;
     }
     string getMetricSubspaceLabel(float level, int metricSubspaceIndex) {
@@ -335,18 +350,34 @@ public:
             if(metricSubspaceEntry.getLevel() == level && metricSubspaceEntry.getMetricSubspaceIndex() == metricSubspaceIndex) {
                 label = metricSubspaceEntry.getLabel();
                 break;
-            } 
+            }
         }
         return label;
     }
-  
+
+    int getNumberOfTrainingIterations() {
+        return _numberOfTrainingIterations;
+    }
+    void setNumberOfTrainingIterations(int numberOfTrainingIterations) {
+        _numberOfTrainingIterations = numberOfTrainingIterations;
+    }
+
+    int getNumberOfHiddenLayerUnits() {
+        return _numberOfHiddenLayerUnits;
+    }
+    void setNumberOfHiddenLayerUnits(int numberOfHiddenLayerUnits) {
+        _numberOfHiddenLayerUnits = numberOfHiddenLayerUnits;
+    }
+
 private:
     string _typeId;
     int _version;
+    int _numberOfTrainingIterations;
+    int _numberOfHiddenLayerUnits;
     DataSource _dataSource;
     TrainedModel _trainedModel;
     vector<VolumeElementGraph> _volumeElementGraphs;
-    
+
     MetricSubspaceRelation _metricSubspaceRelation;
 };
 

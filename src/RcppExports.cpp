@@ -30,6 +30,15 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// dmCreateGenerativeModel
+void dmCreateGenerativeModel();
+RcppExport SEXP _ganDataModel_dmCreateGenerativeModel() {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    dmCreateGenerativeModel();
+    return R_NilValue;
+END_RCPP
+}
 // dmGetBatchSize
 int dmGetBatchSize();
 RcppExport SEXP _ganDataModel_dmGetBatchSize() {
@@ -166,6 +175,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dmGetFileName
+std::string dmGetFileName(const std::string& fileName);
+RcppExport SEXP _ganDataModel_dmGetFileName(SEXP fileNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type fileName(fileNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmGetFileName(fileName));
+    return rcpp_result_gen;
+END_RCPP
+}
 // dmBuildFileName
 std::string dmBuildFileName(const std::string& fileName, const std::string& extension);
 RcppExport SEXP _ganDataModel_dmBuildFileName(SEXP fileNameSEXP, SEXP extensionSEXP) {
@@ -199,13 +219,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // dmReadDataModel
-void dmReadDataModel(const std::string& inFileName);
+bool dmReadDataModel(const std::string& inFileName);
 RcppExport SEXP _ganDataModel_dmReadDataModel(SEXP inFileNameSEXP) {
 BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type inFileName(inFileNameSEXP);
-    dmReadDataModel(inFileName);
-    return R_NilValue;
+    rcpp_result_gen = Rcpp::wrap(dmReadDataModel(inFileName));
+    return rcpp_result_gen;
 END_RCPP
 }
 // dmEvaluateDataSourceRead
@@ -516,10 +537,51 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dmDataModelGetNumberOfTrainingIterations
+int dmDataModelGetNumberOfTrainingIterations();
+RcppExport SEXP _ganDataModel_dmDataModelGetNumberOfTrainingIterations() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(dmDataModelGetNumberOfTrainingIterations());
+    return rcpp_result_gen;
+END_RCPP
+}
+// dmDataModelSetNumberOfTrainingIterations
+void dmDataModelSetNumberOfTrainingIterations(int numberOfTrainingIterations);
+RcppExport SEXP _ganDataModel_dmDataModelSetNumberOfTrainingIterations(SEXP numberOfTrainingIterationsSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type numberOfTrainingIterations(numberOfTrainingIterationsSEXP);
+    dmDataModelSetNumberOfTrainingIterations(numberOfTrainingIterations);
+    return R_NilValue;
+END_RCPP
+}
+// dmDataModelGetNumberOfHiddenLayerUnits
+int dmDataModelGetNumberOfHiddenLayerUnits();
+RcppExport SEXP _ganDataModel_dmDataModelGetNumberOfHiddenLayerUnits() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(dmDataModelGetNumberOfHiddenLayerUnits());
+    return rcpp_result_gen;
+END_RCPP
+}
+// dmDataModelSetNumberOfHiddenLayerUnits
+void dmDataModelSetNumberOfHiddenLayerUnits(int numberOfHiddenLayerUnits);
+RcppExport SEXP _ganDataModel_dmDataModelSetNumberOfHiddenLayerUnits(SEXP numberOfHiddenLayerUnitsSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type numberOfHiddenLayerUnits(numberOfHiddenLayerUnitsSEXP);
+    dmDataModelSetNumberOfHiddenLayerUnits(numberOfHiddenLayerUnits);
+    return R_NilValue;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ganDataModel_dmProgress", (DL_FUNC) &_ganDataModel_dmProgress, 2},
     {"_ganDataModel_dmResetSub", (DL_FUNC) &_ganDataModel_dmResetSub, 0},
+    {"_ganDataModel_dmCreateGenerativeModel", (DL_FUNC) &_ganDataModel_dmCreateGenerativeModel, 0},
     {"_ganDataModel_dmGetBatchSize", (DL_FUNC) &_ganDataModel_dmGetBatchSize, 0},
     {"_ganDataModel_dmGetMaxSize", (DL_FUNC) &_ganDataModel_dmGetMaxSize, 0},
     {"_ganDataModel_dmDataSourceRead", (DL_FUNC) &_ganDataModel_dmDataSourceRead, 1},
@@ -533,6 +595,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ganDataModel_dmGetGenerativeDataDimension", (DL_FUNC) &_ganDataModel_dmGetGenerativeDataDimension, 0},
     {"_ganDataModel_dmGetNormalizedSize", (DL_FUNC) &_ganDataModel_dmGetNormalizedSize, 0},
     {"_ganDataModel_dmGetEvaluateCopyDataSourceNormalizedSize", (DL_FUNC) &_ganDataModel_dmGetEvaluateCopyDataSourceNormalizedSize, 0},
+    {"_ganDataModel_dmGetFileName", (DL_FUNC) &_ganDataModel_dmGetFileName, 1},
     {"_ganDataModel_dmBuildFileName", (DL_FUNC) &_ganDataModel_dmBuildFileName, 2},
     {"_ganDataModel_dmWriteWithReadingTrainedModel", (DL_FUNC) &_ganDataModel_dmWriteWithReadingTrainedModel, 1},
     {"_ganDataModel_dmWrite", (DL_FUNC) &_ganDataModel_dmWrite, 1},
@@ -565,6 +628,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ganDataModel_dmGetMetricSubspacesSub", (DL_FUNC) &_ganDataModel_dmGetMetricSubspacesSub, 2},
     {"_ganDataModel_dmMetricSubspaceLabelPointsSub", (DL_FUNC) &_ganDataModel_dmMetricSubspaceLabelPointsSub, 5},
     {"_ganDataModel_dmSortLevelIndices", (DL_FUNC) &_ganDataModel_dmSortLevelIndices, 1},
+    {"_ganDataModel_dmDataModelGetNumberOfTrainingIterations", (DL_FUNC) &_ganDataModel_dmDataModelGetNumberOfTrainingIterations, 0},
+    {"_ganDataModel_dmDataModelSetNumberOfTrainingIterations", (DL_FUNC) &_ganDataModel_dmDataModelSetNumberOfTrainingIterations, 1},
+    {"_ganDataModel_dmDataModelGetNumberOfHiddenLayerUnits", (DL_FUNC) &_ganDataModel_dmDataModelGetNumberOfHiddenLayerUnits, 0},
+    {"_ganDataModel_dmDataModelSetNumberOfHiddenLayerUnits", (DL_FUNC) &_ganDataModel_dmDataModelSetNumberOfHiddenLayerUnits, 1},
     {NULL, NULL, 0}
 };
 

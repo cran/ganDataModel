@@ -44,9 +44,9 @@ and evaluated data source.
 \dontrun{
 dmRead("dm.bin", "gd.bin")
 dmPlotMetricSubspaces(
-  list(dmPlotMetricSubspaceParameters(level = 0.7,
+  list(dmPlotMetricSubspaceParameters(level = 0.5,
                                        labels = c("*"),
-                                       percent = 50,
+                                       percent = 100,
                                        boundary = TRUE,
                                        color = "red",
                                        backgroundPercent = 0,

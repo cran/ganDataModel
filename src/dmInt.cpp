@@ -17,20 +17,20 @@ namespace dmInt {
     DataSource* pEvaluateDataSource = 0;
     DataSource* pEvaluateCopyDataSource = 0;
     VolumeElementGraph* pVolumeElementGraph = 0;
-    
+
     Progress* pProgress = 0;
-  
+
     int batchSize = 256;
     int maxSize = batchSize * 50000;
-    int buildGraphIterations = 4;
+    int buildGraphIterations = 2;
     int minMetricSubspaceSize = 1000;
-    
+
     int nNearestNeighborDistances = 8;
-    int nNearestNeighbors = 128;
-    
+    int nMaxNearestNeighborDistances = 256;
+
     int nMetricSubspaceNearestNeighborDistances = 8;
     int nMetricSubspaceNearestNeighbors = 8;
-  
+
     const string cMaxSizeExceeded = "Max size of generative data exceeded";
 }
 
@@ -39,14 +39,14 @@ vector<int> randomIndicesWithoutReplacement(int size, float percent, int seed = 
     for(int i = 0; i < (int)indices.size(); i++) {
         indices[i] = i;
     }
-  
+
     vector<int> randomIndices;
     random_device rd;
     mt19937 mt(rd());
     if(seed > 0) {
         mt.seed(seed);
     }
-  
+
     int n = round((float)size * percent / 100);
     for(int i = 0; i < n; i++) {
         if(indices.size() > 0) {
@@ -57,7 +57,7 @@ vector<int> randomIndicesWithoutReplacement(int size, float percent, int seed = 
             indices.resize(indices.size() - 1);
         }
     }
-  
+
     return randomIndices;
 }
 
@@ -79,9 +79,21 @@ void dmResetSub() {
 
         delete dmInt::pVolumeElementGraph;
         dmInt::pVolumeElementGraph = 0;
-        
+
         delete dmInt::pProgress;
         dmInt::pProgress = 0;
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
+    } catch(...) {
+        ::Rf_error("C++ exception (unknown reason)");
+    }
+}
+
+// [[Rcpp::export]]
+void dmCreateGenerativeModel() {
+    try {
+        delete dmInt::pDataModel;
+        dmInt::pDataModel = new DataModel(*dmInt::pDataSource);
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
     } catch(...) {
@@ -119,7 +131,7 @@ void dmDataSourceRead(const std::string& inFileName) {
         if(!is.is_open()) {
             throw string("File " + inFileName + " could not be opened");
         }
-    
+
         delete dmInt::pDataSource;
         dmInt::pDataSource = new DataSource();
         dmInt::pDataSource->read(is);
@@ -139,12 +151,12 @@ void dmGenerativeDataRead(const std::string& inFileName) {
         if(!is.is_open()) {
             throw string("File " + inFileName + " could not be opened");
         }
-    
+
         delete dmInt::pGenerativeData;
         dmInt::pGenerativeData = new GenerativeData();
         dmInt::pGenerativeData->read(is);
         is.close();
-    
+
         if(dmInt::pGenerativeData->getNormalizedSize() > dmInt::maxSize) {
             throw string(dmInt::cMaxSizeExceeded);
         }
@@ -161,7 +173,7 @@ std::vector<float> dmDataSourceGetNormalizedDataRandom(int rowCount) {
         if(dmInt::pDataSource == 0) {
             throw string("No data source");
         }
-    
+
         std::vector<float> v = dmInt::pDataSource->getNormalizedDataRandom(rowCount);
         return v;
     } catch (const string& e) {
@@ -177,7 +189,7 @@ std::vector<std::vector<float>> dmDataSourceGetDataRandom(float percent) {
         if(dmInt::pDataModel == 0) {
             throw string("No data model");
         }
-    
+
         vector<int> randomIndices1 = randomIndicesWithoutReplacement(dmInt::pDataModel->getDataSource().getNormalizedSize(), percent);
 
         std::vector<vector<float>> v(2);
@@ -190,7 +202,7 @@ std::vector<std::vector<float>> dmDataSourceGetDataRandom(float percent) {
             vector<float> numberVector = dmInt::pDataModel->getDataSource().getDenormalizedNumberVector(randomIndices1[i]);
             v[1].insert(v[1].end(), numberVector.begin(), numberVector.end());
         }
-    
+
         return v;
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -205,7 +217,7 @@ std::vector<float> dmGenerativeDataGetNormalizedDataRandom(int rowCount) {
         if(dmInt::pGenerativeData == 0) {
             throw string("No generative data");
         }
-    
+
         std::vector<float> v = ((DataSource*)dmInt::pGenerativeData)->getNormalizedDataRandom(rowCount);
         return v;
     } catch (const string& e) {
@@ -221,7 +233,7 @@ std::vector<std::vector<float>> dmGenerativeDataGetNormalizedDataRandomWithDensi
         if(dmInt::pGenerativeData == 0) {
             throw string("No generative model");
         }
-    
+
         vector<vector<float>> v = dmInt::pGenerativeData->getNormalizedDataRandomWithDensities(rowCount);
         return v;
     } catch (const string& e) {
@@ -237,7 +249,7 @@ std::vector<float> dmEvaluateCopyDataSourceGetNormalizedData(int row, int rowCou
         if(dmInt::pEvaluateCopyDataSource == 0) {
             throw string("No data source");
         }
-    
+
         std::vector<float> v = dmInt::pEvaluateCopyDataSource->getNormalizedData(row - 1, rowCount);
         return v;
     } catch (const string& e) {
@@ -253,7 +265,7 @@ int dmGetDataSourceDimension() {
         if(dmInt::pDataModel == 0) {
             throw string("No datamodel");
         }
-    
+
         return dmInt::pDataModel->getDataSource().getDimension();
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -268,7 +280,7 @@ int dmGetGenerativeDataDimension() {
         if(dmInt::pGenerativeData == 0) {
             throw string("No gnerative data");
         }
-    
+
         return dmInt::pGenerativeData->getDimension();
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -283,7 +295,7 @@ int dmGetNormalizedSize() {
         if(dmInt::pGenerativeData == 0) {
             throw string("No data source");
         }
-    
+
         return dmInt::pGenerativeData->getNormalizedSize();
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -298,8 +310,19 @@ int dmGetEvaluateCopyDataSourceNormalizedSize() {
         if(dmInt::pEvaluateCopyDataSource == 0) {
             throw string("No data source");
         }
-    
+
         return dmInt::pEvaluateCopyDataSource->getNormalizedSize();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
+    } catch(...) {
+        ::Rf_error("C++ exception (unknown reason)");
+    }
+}
+
+// [[Rcpp::export]]
+std::string dmGetFileName(const std::string& fileName) {
+    try {
+        return GetFileName()(fileName);
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
     } catch(...) {
@@ -326,10 +349,10 @@ void dmWriteWithReadingTrainedModel(const std::string& outFileName) {
         if(!os.is_open()) {
             throw string("File " + outFileName + " could not be opened");
         }
-    
-        delete dmInt::pDataModel;
-        dmInt::pDataModel = new DataModel(*dmInt::pDataSource);
-    
+
+        //delete dmInt::pDataModel;
+        //dmInt::pDataModel = new DataModel(*dmInt::pDataSource);
+
         dmInt::pDataModel->writeWithReadingTrainedModel(os, GetFileName()(outFileName));
         os.close();
     } catch (const string& e) {
@@ -345,13 +368,13 @@ void dmWrite(const std::string& outFileName) {
         if(dmInt::pDataModel == 0) {
             throw string("No data model");
         }
-    
+
         ofstream os;
         os.open(outFileName.c_str(), std::ios::binary);
         if(!os.is_open()) {
             throw string("File " + outFileName + " could not be opened");
         }
-    
+
         dmInt::pDataModel->write(os, GetFileName()(outFileName));
         os.close();
     } catch (const string& e) {
@@ -362,19 +385,22 @@ void dmWrite(const std::string& outFileName) {
 }
 
 // [[Rcpp::export]]
-void dmReadDataModel(const std::string& inFileName) {
+bool dmReadDataModel(const std::string& inFileName) {
     try {
         ifstream is;
         is.open(inFileName.c_str(), std::ios::binary);
         if(!is.is_open()) {
-            throw string("File " + inFileName + " could not be opened");
+            //throw string("File " + inFileName + " could not be opened");
+            return false;
         }
-    
+
         delete dmInt::pDataModel;
         dmInt::pDataModel = new DataModel();
-    
+
         dmInt::pDataModel->read(is, GetFileName()(inFileName));
         is.close();
+
+        return true;
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
     } catch(...) {
@@ -390,16 +416,16 @@ void dmEvaluateDataSourceRead(const std::string& inFileName) {
         if(!is.is_open()) {
             throw string("File " + inFileName + " could not be opened");
         }
-    
+
         delete dmInt::pEvaluateDataSource;
         dmInt::pEvaluateDataSource = new DataSource();
         dmInt::pEvaluateDataSource->read(is);
         is.close();
-    
+
         delete dmInt::pEvaluateCopyDataSource;
         dmInt::pEvaluateCopyDataSource = new DataSource(dmInt::pDataModel->getDataSource());
         dmInt::pEvaluateCopyDataSource->addData(*dmInt::pEvaluateDataSource);
-    
+
         NormalizeData normalizeData;
         normalizeData.normalize(*dmInt::pEvaluateCopyDataSource, false);
     } catch (const string& e) {
@@ -419,7 +445,7 @@ std::vector<std::vector<float>> dmGetEvaluateCopyDataSourceNormalizedData(int ro
         vector<vector<float>> v(2);
         v[0] = dmInt::pEvaluateCopyDataSource->getNormalizedData(row - 1, rowCount);
         v[1] = dmInt::pEvaluateCopyDataSource->getDenormalizedData(row - 1, rowCount);
-        
+
         return v;
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -434,7 +460,7 @@ std::vector<float> dmGetEvaluateCopyDataSourceDenormalizedData(int row, int rowC
         if(dmInt::pEvaluateCopyDataSource == 0) {
             throw string("No evaluate data source");
         }
-    
+
         return dmInt::pEvaluateCopyDataSource->getDenormalizedData(row - 1, rowCount);
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -449,7 +475,7 @@ std::vector<std::wstring> dmGetNumberVectorIndexNames(std::vector<int>& numberVe
         if(dmInt::pGenerativeData == 0) {
             throw string("No generative data");
         }
-    
+
         vector<int> indexVector = numberVectorIndices;
         for(int i = 0; i < (int)indexVector.size(); i++) {
             indexVector[i] -= 1;
@@ -495,7 +521,7 @@ List dmGetRow(int index) {
         if(dmInt::pGenerativeData == 0) {
             throw string("No generative data");
         }
-    
+
         List list;
         vector<Column*> const & columnVector = dmInt::pGenerativeData->getColumnVector();
         for(int i = 0; i < (int)columnVector.size(); i++) {
@@ -524,7 +550,7 @@ void dmReadVolumeElementGraph(const std::string& inFileName) {
         if(!is.is_open()) {
             throw string("File " + inFileName + " could not be opened");
         }
-    
+
         delete dmInt::pVolumeElementGraph;
         dmInt::pVolumeElementGraph = new VolumeElementGraph();
         dmInt::pVolumeElementGraph->read(is);
@@ -542,13 +568,13 @@ void dmWriteVolumeElementGraph(const std::string& outFileName) {
         if(dmInt::pVolumeElementGraph == 0) {
             throw string("No volume element graoh");
         }
-    
+
         ofstream os;
         os.open(outFileName.c_str(), ios::binary);
         if(!os.is_open()) {
             throw string("File " + outFileName + " could not be opened");
         }
-  
+
         dmInt::pVolumeElementGraph->write(os);
         os.close();
     } catch (const string& e) {
@@ -564,7 +590,7 @@ void dmAddVolumeElementsSub(std::vector<float>& volumeElementValues, std::vector
         if(dmInt::pVolumeElementGraph == 0) {
             dmInt::pVolumeElementGraph = new VolumeElementGraph(level);
         }
-    
+
         dmInt::pVolumeElementGraph->addVolumeElements(volumeElementValues, dimensions, indexBegin - 1, level, dmInt::pProgress);
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -582,7 +608,7 @@ void dmBuildVolumeElements() {
         if(dmInt::pVolumeElementGraph == 0) {
             throw string("No volume element graoh");
         }
-    
+
         dmInt::pVolumeElementGraph->buildVolumeElements();
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -600,7 +626,7 @@ void dmBuildVolumeElementTree() {
         if(dmInt::pVolumeElementGraph == 0) {
             throw string("No volume element graoh");
         }
-    
+
         dmInt::pVolumeElementGraph->buildVolumeElementTree(dmInt::pProgress);
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -621,8 +647,8 @@ void dmBuildVolumeElementGraph() {
         if(!dmInt::pVolumeElementGraph->isVolumeElementTreeBuilt()) {
             throw string("No volume element tree");
         }
-    
-        dmInt::pVolumeElementGraph->buildVolumeElementGraphIterative(dmInt::nNearestNeighborDistances, dmInt::nNearestNeighbors, dmInt::buildGraphIterations, true, dmInt::pProgress);
+
+        dmInt::pVolumeElementGraph->buildVolumeElementGraphIterative(dmInt::nNearestNeighborDistances, dmInt::nMaxNearestNeighborDistances, dmInt::buildGraphIterations, dmInt::pProgress);
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
     } catch(...) {
@@ -642,7 +668,7 @@ void dmAddVolumeElementGraph() {
         if(dmInt::pDataModel == 0) {
             throw string("No data model");
         }
-    
+
         int levelIndex = -1;
         for(int i = 0; i < (int)dmInt::pDataModel->getVolumeElementGraphs().size(); i++) {
             if(dmInt::pDataModel->getVolumeElementGraphs()[i].getLevel() == dmInt::pVolumeElementGraph->getLevel()) {
@@ -653,11 +679,11 @@ void dmAddVolumeElementGraph() {
         if(levelIndex == -1 ) {
             dmInt::pDataModel->getVolumeElementGraphs().push_back(VolumeElementGraph(*dmInt::pVolumeElementGraph));
         } else {
-            dmInt::pDataModel->getVolumeElementGraphs()[levelIndex] = *dmInt::pVolumeElementGraph;          
+            dmInt::pDataModel->getVolumeElementGraphs()[levelIndex] = *dmInt::pVolumeElementGraph;
         }
-        
+
         dmInt::pDataModel->buildMetricSubspaceRelation();
-        
+
         delete dmInt::pVolumeElementGraph;
         dmInt::pVolumeElementGraph = 0;
     } catch (const string& e) {
@@ -673,11 +699,11 @@ int dmBuildMetricSubspacesSub() {
         if(dmInt::pGenerativeData == 0) {
             throw string("No generative data");
         }
-           
+
         if(dmInt::pVolumeElementGraph == 0) {
             throw string("No volume element graoh");
         }
-    
+
         int c = dmInt::pVolumeElementGraph->buildMetricSubspaces(dmInt::minMetricSubspaceSize);
         return c;
     } catch (const string& e) {
@@ -725,18 +751,18 @@ std::vector<float> dmGetMetricSubspaceDenormalizedGenerativeData(float level, in
 
         int levelIndex = dmInt::pDataModel->getLevelIndex(level);
         VolumeElementGraph& volumeElementGraph = dmInt::pDataModel->getVolumeElementGraphs()[levelIndex];
-        
+
         vector<int> metricSubspaceGenerativeDataIndices;
         metricSubspaceGenerativeDataIndices = volumeElementGraph.getGenerativeDataVolumeElementIndices(metricSubspaceIndex - 1, boundary);
         vector<int> randomMetricSubspaceGenerativeDataIndices = randomIndicesWithoutReplacement(metricSubspaceGenerativeDataIndices.size(), percent);
-        
+
         vector<float> metricSubspaceData;
         for(int i = 0; i < (int)randomMetricSubspaceGenerativeDataIndices.size(); i++) {
             int index = metricSubspaceGenerativeDataIndices[randomMetricSubspaceGenerativeDataIndices[i]];
             vector<float> denormalizedNumberVector = dmInt::pGenerativeData->getDenormalizedNumberVector(index);
             metricSubspaceData.insert(metricSubspaceData.end(), denormalizedNumberVector.begin(), denormalizedNumberVector.end());
         }
-        
+
         return metricSubspaceData;
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -754,13 +780,13 @@ std::vector<int> dmGetMetricSubspaceIndices(float level, std::vector<std::string
         if(dmInt::pDataModel == 0) {
             throw string("No data model");
         }
-    
+
         vector<int> metricSubspacesIndices;
         metricSubspacesIndices = dmInt::pDataModel->getMetricSubspaceIndices(level, labels);
         for(int i = 0; i < (int)metricSubspacesIndices.size(); i++) {
             metricSubspacesIndices[i] += 1;
         }
-    
+
         return metricSubspacesIndices;
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -778,10 +804,10 @@ List dmGetAdjacentVolumeElementIndices(int index) {
         if(dmInt::pVolumeElementGraph == 0) {
             throw string("No volume element graoh");
         }
-    
+
         vector<VpElement> positiveAdjacentElements = dmInt::pVolumeElementGraph->getVolumeElements()[index].getPositiveAdjacentVolumeElements();
         vector<VpElement> negativeAdjacentElements = dmInt::pVolumeElementGraph->getVolumeElements()[index].getNegativeAdjacentVolumeElements();
-    
+
         List list;
         for(int i = 0; i < (int)positiveAdjacentElements.size(); i++) {
             list.insert(list.end(), positiveAdjacentElements[i].getIndex());
@@ -791,7 +817,7 @@ List dmGetAdjacentVolumeElementIndices(int index) {
             list.insert(list.end(), negativeAdjacentElements[i].getIndex());
             list.insert(list.end(), negativeAdjacentElements[i].getDistance());
         }
-    
+
         return list;
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -806,13 +832,13 @@ float dmGetMax(int i) {
         if(dmInt::pGenerativeData == 0) {
             throw string("No generative data");
         }
-    
+
         if(i - 1 < 0 || i - 1 > dmInt::pGenerativeData->getDimension() - 1) {
             throw string(cInvalidColumnIndex);
         }
         int j = dmInt::pGenerativeData->getColumnIndex(i - 1);
         vector<Column*> const& columnVector = dmInt::pGenerativeData->getColumnVector();
-    
+
         float max = 0;
         Column::COLUMN_TYPE type = columnVector[j]->getColumnType();
         if(type == Column::NUMERICAL) {
@@ -835,13 +861,13 @@ float dmGetMin(int i) {
         if(dmInt::pGenerativeData == 0) {
             throw string("No generative data");
         }
-    
+
         if(i - 1 < 0 || i - 1 > dmInt::pGenerativeData->getDimension() - 1) {
             throw string(cInvalidColumnIndex);
         }
         int j = dmInt::pGenerativeData->getColumnIndex(i - 1);
         vector<Column*> const& columnVector = dmInt::pGenerativeData->getColumnVector();
-    
+
         float min = 0;
         Column::COLUMN_TYPE type = columnVector[j]->getColumnType();
         if(type == Column::NUMERICAL) {
@@ -903,7 +929,7 @@ List dmGetMetricSubspaceProperties(float level) {
         if(dmInt::pDataModel == 0) {
             throw string("No data model");
         }
-    
+
         List levelMetricSubspaceList;
         vector<MetricSubspaceEntry>& metricSubspaceEntries = dmInt::pDataModel->getMetricSubspaceRelation().getMetricSubspaceEntries();
         for(int i = 0; i < (int)metricSubspaceEntries.size(); i++) {
@@ -911,7 +937,7 @@ List dmGetMetricSubspaceProperties(float level) {
                 List levelMetricSubspace;
                 levelMetricSubspace.insert(levelMetricSubspace.end(), metricSubspaceEntries[i].getLabel());
                 levelMetricSubspace.insert(levelMetricSubspace.end(), metricSubspaceEntries[i].getMetricSubspaceSize());
-          
+
                 levelMetricSubspaceList.insert(levelMetricSubspaceList.end(), levelMetricSubspace);
             }
         }
@@ -941,20 +967,20 @@ void dmRemoveMetricSubspacesSub(float level) {
 // [[Rcpp::export]]
 std::vector<float> dmNormalizedDataRecord(List dataRecord) {
     try {
-      
+
         if(dmInt::pDataModel == 0) {
             throw string("No data model");
         }
-    
+
         vector<float> numberVector;
         for(List::iterator iterator = dataRecord.begin(); iterator != dataRecord.end(); ++iterator) {
             float number = (float)as<double>(*iterator);
             numberVector.push_back(number);
         }
-        
+
         NormalizeData normalizeData;
         vector<float> normalizedNumberVector = normalizeData.getNormalizedNumberVector(dmInt::pDataModel->getDataSource() , numberVector);
-        
+
         return normalizedNumberVector;
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -972,22 +998,22 @@ List dmGetMetricSubspacesSub(List dataRecord, float level) {
         if(dmInt::pDataModel == 0) {
             throw string("No data model");
         }
- 
+
         vector<float> numberVector;
         for(List::iterator iterator = dataRecord.begin(); iterator != dataRecord.end(); ++iterator) {
             float number = (float)as<double>(*iterator);
             numberVector.push_back(number);
         }
- 
+
         NormalizeData normalizeData;
         vector<float> normalizedNumberVector = normalizeData.getNormalizedNumberVector(dmInt::pDataModel->getDataSource() , numberVector);
-        
+
         VpGenerativeData<float> vpGenerativeData(*dmInt::pGenerativeData);
         L2Distance<float> l2Distance;
         VpTree<float> vpTree(&vpGenerativeData, &l2Distance, 0);
         vector<VpElement> nearestNeighbors;
         vpTree.linearSearch(normalizedNumberVector, dmInt:: nMetricSubspaceNearestNeighborDistances, dmInt:: nMetricSubspaceNearestNeighbors, nearestNeighbors);
-        
+
         vector<pair<float, string>> levelMetricSubspaces;
         vector<float> levels = dmInt::pDataModel->getLevels();
         for(int i = 0; i < (int)levels.size(); i++) {
@@ -996,12 +1022,12 @@ List dmGetMetricSubspacesSub(List dataRecord, float level) {
                 int levelIndex = dmInt::pDataModel->getLevelIndex(levels[i]);
                 VolumeElementGraph& volumeElementGraph = dmInt::pDataModel->getVolumeElementGraphs()[levelIndex];
                 int volumeElementIndex = volumeElementGraph.getGenerativeDataVolumeElementIndices()[nearestNeighbors[j].getIndex()];
- 
+
                 int metricSubspaceElementIndex = volumeElementGraph.getVolumeElements()[volumeElementIndex].getMetricSubspaceElementIndex();
                 int metricSubspaceIndex = volumeElementGraph.getMetricSubspaceElements()[metricSubspaceElementIndex].getMetricSubspaceIndex();
- 
+
                 string label = dmInt::pDataModel->getMetricSubspaceLabel(levels[i], metricSubspaceIndex);
-                
+
                 if(level >= levels[i]) {
                     found = true;
                     levelMetricSubspaces.push_back(make_pair(levels[i], label));
@@ -1018,10 +1044,10 @@ List dmGetMetricSubspacesSub(List dataRecord, float level) {
             List levelMetricSubspace;
             levelMetricSubspace.insert(levelMetricSubspace.end(), levelMetricSubspaces[i].first);
             levelMetricSubspace.insert(levelMetricSubspace.end(), levelMetricSubspaces[i].second);
-            
+
             levelMetricSubspaceList.insert(levelMetricSubspaceList.end(), levelMetricSubspace);
         }
-        
+
         return levelMetricSubspaceList;
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -1039,20 +1065,20 @@ List dmMetricSubspaceLabelPointsSub(float lLevel, float rLevel, float percent, s
         if(dmInt::pDataModel == 0) {
             throw string("No data model");
         }
-        
+
         vector<float> metricSubspacesData;
         vector<string> metricSubspaceLabels;
         vector<int> metricSubspaceIndices = dmInt::pDataModel->getMetricSubspaceIndices(lLevel, lLabels);
         for(int i = 0; i < (int)metricSubspaceIndices.size(); i++) {
             int metricSubspaceIndex = metricSubspaceIndices[i];
             vector<int> generativeDataIndices = dmInt::pDataModel->getMetricSubspaceGenerativeDataIndices(lLevel, rLevel, metricSubspaceIndex);
-            
+
             vector<int> randomIndices = randomIndicesWithoutReplacement(generativeDataIndices.size(), percent, lLevel * 100 + metricSubspaceIndex);
             vector<int> r(randomIndices.size(), -1);
             for(int j = 0; j < (int)randomIndices.size(); j++) {
                 r[j] = generativeDataIndices[randomIndices[j]];
             }
-            
+
             VpIndexGenerativeData<float> vpGenerativeData(*dmInt::pGenerativeData, r);
             vector<float> d(dmInt::pGenerativeData->getDimension(), nan(""));
             for(int j = 0; j < (int)columnIndices.size(); j++) {
@@ -1061,16 +1087,16 @@ List dmMetricSubspaceLabelPointsSub(float lLevel, float rLevel, float percent, s
             L2DistanceNanIndexed<float> distance(d);
             VpTree<float> vpTree;
             vpTree.build(&vpGenerativeData, &distance, 0);
-        
+
             int levelIndex = dmInt::pDataModel->getLevelIndex(lLevel);
             VolumeElementGraph& volumeElementGraph = dmInt::pDataModel->getVolumeElementGraphs()[levelIndex];
-            
+
             vector<int> metricSubspaceGenerativeDataBoundaryIndices = volumeElementGraph.getGenerativeDataVolumeElementIndices(metricSubspaceIndex, true);
             VpIndexGenerativeData<float> vpGenerativeDataBoundary(*dmInt::pGenerativeData, metricSubspaceGenerativeDataBoundaryIndices);
             VpTree<float> vpBoundaryTree;
             L2Distance<float> l2Distance;
             vpBoundaryTree.build(&vpGenerativeDataBoundary, &l2Distance, 0);
-            
+
             vector<int> metricSubspaceGenerativeDataIndices = volumeElementGraph.getGenerativeDataVolumeElementIndices(metricSubspaceIndex, false);
             vector<int> randomMetricSubspaceIndices = randomIndicesWithoutReplacement(metricSubspaceGenerativeDataIndices.size(), percent, lLevel * 100 + metricSubspaceIndex);
             float maxDistance = 0;
@@ -1079,7 +1105,7 @@ List dmMetricSubspaceLabelPointsSub(float lLevel, float rLevel, float percent, s
                 vector<float> numberVector = dmInt::pGenerativeData->getNormalizedNumberVector(metricSubspaceGenerativeDataIndices[randomMetricSubspaceIndices[j]]);
                 vector<VpElement> nearestNeighbors;
                 vpTree.search(numberVector, 1, 1, nearestNeighbors);
-                
+
                 vector<VpElement> nearestNeighborsBoundary;
                 vpBoundaryTree.search(numberVector, 1, 1, nearestNeighborsBoundary);
                 float minDistance = numeric_limits<float>::max();
@@ -1103,15 +1129,15 @@ List dmMetricSubspaceLabelPointsSub(float lLevel, float rLevel, float percent, s
                 denormalizedNumberVector = dmInt::pGenerativeData->getDenormalizedNumberVector(maxIndex);
             }
             metricSubspacesData.insert(metricSubspacesData.end(), denormalizedNumberVector.begin(), denormalizedNumberVector.end());
-            
+
             string label =  dmInt::pDataModel->getMetricSubspaceLabel(lLevel, metricSubspaceIndex);
             metricSubspaceLabels.push_back(label);
         }
-        
+
         List metricSubspaceKeyPoints;
         metricSubspaceKeyPoints.insert(metricSubspaceKeyPoints.end(), metricSubspacesData);
         metricSubspaceKeyPoints.insert(metricSubspaceKeyPoints.end(), metricSubspaceLabels);
-        
+
         return metricSubspaceKeyPoints;
     } catch (const string& e) {
         ::Rf_error("%s", e.c_str());
@@ -1128,7 +1154,7 @@ std::vector<int> dmSortLevelIndices(std::vector<float>& levels) {
             levelIndexPairs.push_back(make_pair(levels[i], i + 1));
         }
         sort(levelIndexPairs.begin(), levelIndexPairs.end());
-        
+
         vector<int> sortedLevelIndices;
         for(int i = 0; i < (int)levelIndexPairs.size(); i++) {
             sortedLevelIndices.push_back(levelIndexPairs[i].second);
@@ -1140,3 +1166,64 @@ std::vector<int> dmSortLevelIndices(std::vector<float>& levels) {
         ::Rf_error("C++ exception (unknown reason)");
     }
 }
+
+// [[Rcpp::export]]
+int dmDataModelGetNumberOfTrainingIterations() {
+    try {
+        if(dmInt::pDataModel == 0) {
+            throw string("No data model");
+        }
+
+        return dmInt::pDataModel->getNumberOfTrainingIterations();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
+    } catch(...) {
+        ::Rf_error("C++ exception (unknown reason)");
+    }
+}
+
+// [[Rcpp::export]]
+void dmDataModelSetNumberOfTrainingIterations(int numberOfTrainingIterations) {
+    try {
+        if(dmInt::pDataModel == 0) {
+            throw string("No data model");
+        }
+
+        dmInt::pDataModel->setNumberOfTrainingIterations(numberOfTrainingIterations);
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
+    } catch(...) {
+        ::Rf_error("C++ exception (unknown reason)");
+    }
+}
+
+// [[Rcpp::export]]
+int dmDataModelGetNumberOfHiddenLayerUnits() {
+    try {
+        if(dmInt::pDataModel == 0) {
+            throw string("No data model");
+        }
+
+        return dmInt::pDataModel->getNumberOfHiddenLayerUnits();
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
+    } catch(...) {
+        ::Rf_error("C++ exception (unknown reason)");
+    }
+}
+
+// [[Rcpp::export]]
+void dmDataModelSetNumberOfHiddenLayerUnits(int numberOfHiddenLayerUnits) {
+    try {
+        if(dmInt::pDataModel == 0) {
+            throw string("No data model");
+        }
+
+        dmInt::pDataModel->setNumberOfHiddenLayerUnits(numberOfHiddenLayerUnits);
+    } catch (const string& e) {
+        ::Rf_error("%s", e.c_str());
+    } catch(...) {
+        ::Rf_error("C++ exception (unknown reason)");
+    }
+}
+

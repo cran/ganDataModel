@@ -18,5 +18,5 @@ Calculate a density value for a data record by evaluating the contained neural n
 \examples{
 \dontrun{
 dmRead("dm.bin", "gd.bin")
-dmCalculateDensityValue(list(4.4, 2.9, 1.4, 0.3))}
+dmCalculateDensityValue(list(4.4, 2.9, 1.4, 0.2))}
 }

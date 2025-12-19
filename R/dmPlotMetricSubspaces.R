@@ -21,7 +21,7 @@ dmPlot <- function(title, dimension, columnIndices) {
     minY <- dmGetMin(columnIndices[2])
     maxY <- dmGetMax(columnIndices[2])
   }
-  
+
   plot(c(), c(), pch = 1, main = title, cex.main = 2.5, font.main = 1, xlim = c(minX, maxX), ylim = c(minY, maxY), col = "blue", xlab = numberVectorIndexNames[1], ylab = numberVectorIndexNames[2], cex.lab = 2.5, cex.axis = 2.5)
 }
 
@@ -33,7 +33,7 @@ dmMetricSubspacePoints <- function(level, metricSubspaceIndex, percent, boundary
   size <- length(data) / dimension
   if(size > 0) {
     data <- array_reshape(data, c(size, dimension))
-    
+
     if(dimension != 1) {
       points(data[1:size, columnIndices[1]], data[1:size, columnIndices[2]], pch = 1, col = color, cex = 1.0)
     } else {
@@ -46,7 +46,7 @@ dmMetricSubspacePoints <- function(level, metricSubspaceIndex, percent, boundary
 dmMetricSubspacesPoints <- function(plotMetricSubspaceParameters, batchSize, dimension, columnIndices) {
     labels <- plotMetricSubspaceParameters$labels
     metricSubspaceIndices <- dmGetMetricSubspaceIndices(plotMetricSubspaceParameters$level, labels)
-    
+
     for(metricSubspaceIndex in metricSubspaceIndices) {
       if(plotMetricSubspaceParameters$backgroundReset) {
         dmMetricSubspacePoints(plotMetricSubspaceParameters$level,
@@ -58,7 +58,7 @@ dmMetricSubspacesPoints <- function(plotMetricSubspaceParameters, batchSize, dim
                                dimension,
                                columnIndices)
       }
-      
+
       if(plotMetricSubspaceParameters$backgroundPercent > 0) {
         dmMetricSubspacePoints(plotMetricSubspaceParameters$level,
                                metricSubspaceIndex,
@@ -69,7 +69,7 @@ dmMetricSubspacesPoints <- function(plotMetricSubspaceParameters, batchSize, dim
                                dimension,
                                columnIndices)
       }
-      
+
       dmMetricSubspacePoints(plotMetricSubspaceParameters$level,
                              metricSubspaceIndex,
                              plotMetricSubspaceParameters$percent,
@@ -92,11 +92,11 @@ dmMetricSubspaceLabelPoints <- function(lPlotMetricSubspaceParameters, rPlotMetr
   metricSubspacePoints <- dmMetricSubspaceLabelPointsSub(lLevel, rLevel, percent, columnIndices, lLabels)
   data <- metricSubspacePoints[[1]]
   labels <- metricSubspacePoints[[2]]
-  
+
   size <- length(data) / dimension
   if(size > 0) {
     data <- array_reshape(data, c(size, dimension))
-  
+
     if(lPlotMetricSubspaceParameters$plotLabels) {
       cex <- 3.0
       for(i in 1:length(labels)) {
@@ -122,40 +122,40 @@ dmEvaluateDataSourcePoints <- function(level, batchSize, dimension, columnIndice
     if(batchSize > dmGetEvaluateCopyDataSourceNormalizedSize() - i + 1) {
       size <- dmGetEvaluateCopyDataSourceNormalizedSize() - i + 1
     }
-    
+
     data <- dmGetEvaluateCopyDataSourceNormalizedData(i, batchSize)
     nd <- array_reshape(data[[1]], c(batchSize, dimension))
     dd <- array_reshape(data[[2]], c(batchSize, dimension))
-    
+
     d <- dmEvaluate(nd)
-    
+
     if(dimension != 1) {
       if(greaterEqual) {
         points(dd[1:size, columnIndices[1]], dd[1:size, columnIndices[2]], pch = 1, col = ifelse(d >= level, evaluateDataSourceColor, rgb(0, 0, 0, alpha = 0.0)), cex = 1.1)
       } else {
-        points(dd[1:size, columnIndices[1]], dd[1:size, columnIndices[2]], pch = 1, col = ifelse(d < level, evaluateDataSourceColor, rgb(0, 0, 0, alpha = 0.0)), cex = 2.7)      
+        points(dd[1:size, columnIndices[1]], dd[1:size, columnIndices[2]], pch = 1, col = ifelse(d < level, evaluateDataSourceColor, rgb(0, 0, 0, alpha = 0.0)), cex = 2.7)
       }
     } else {
       ddY <- array(0, c(size))
       if(greaterEqual) {
         points(dd[1:size, columnIndices[1]], ddY[1:size], pch = 1, col = ifelse(d >= level, evaluateDataSourceColor, rgb(0, 0, 0, alpha = 0.0)), cex = 1.1)
       } else {
-        points(dd[1:size, columnIndices[1]], ddY[1:size], pch = 1, col = ifelse(d < level, evaluateDataSourceColor, rgb(0, 0, 0, alpha = 0.0)), cex = 2.7)      
+        points(dd[1:size, columnIndices[1]], ddY[1:size], pch = 1, col = ifelse(d < level, evaluateDataSourceColor, rgb(0, 0, 0, alpha = 0.0)), cex = 2.7)
       }
     }
-    
+
     i <- i + batchSize
   }
 }
 
 #' Specify plot parameters for metric subspaces for a level
-#' 
+#'
 #' Specify plot parameters for metric subspaces in a data model for a level.
 #' A list of plot parameters is created for different levels and passed to dmPlotMetricSubspaces().
 #'
 #' @param level Level for metric subspaces.
 #' @param labels Vector of labels for metric subspaces.
-#' The default vector contains the wildcard character * which includes all labels. 
+#' The default vector contains the wildcard character * which includes all labels.
 #' @param percent Percent of randomly selected data points of generative data contained in metric subspaces
 #' @param boundary Boolean value indicating if only data points of metric subspace boundaries should be selected
 #' @param color Color for data points of generative data contained in metric subspaces
@@ -163,13 +163,13 @@ dmEvaluateDataSourcePoints <- function(level, batchSize, dimension, columnIndice
 #' @param backgroundColor Color for data points of generative data contained in metric subspaces for background
 #' @param backgroundReset Before data points for a metric subspace are drawn reset its background.
 #' @param plotLabels Boolean value indicating if labels for metric subspaces for a level should be displayed
-#' 
+#'
 #' @return List of plot parameters for metric subspaces
 #' @export
-#' 
+#'
 #' @examples
 #' \dontrun{
-#' dmPlotMetricSubspaceParameters(0.73)}
+#' dmPlotMetricSubspaceParameters(0.5)}
 dmPlotMetricSubspaceParameters <- function(level, labels = c("*"), percent = 10, boundary = TRUE, color = "red",
                                            backgroundPercent = 0, backgroundColor = "red", backgroundReset = TRUE, plotLabels = TRUE) {
   parameters <- list(level = level, labels = labels, percent = percent, boundary = boundary, color = color,
@@ -177,15 +177,15 @@ dmPlotMetricSubspaceParameters <- function(level, labels = c("*"), percent = 10,
 }
 
 #' Specify plot parameters for evaluated data source
-#' 
+#'
 #' Specify plot parameters for evaluated data source passed to dmPlotMetricSubspaces().
 #'
 #' @param level Level for evaluation
 #' @param color Color for data points of evaluaded data source
-#' 
+#'
 #' @return List of plot parameters for evaluated data source
 #' @export
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' dmPlotEvaluateDataSourceParameters()}
@@ -201,10 +201,10 @@ dmLegend <- function(sortedLevelIndices,
   lLegendVector <- c()
   lColVector <- c()
   lPt <- c()
-  
+
   if(!is.null(plotMetricSubspaceParametersList)) {
     lPchVector <- c(lPchVector, 1)
-    
+
     for(sortedLevelIndex in sortedLevelIndices) {
       plotMetricSubspaceParameters <- plotMetricSubspaceParametersList[[sortedLevelIndex]]
       level <- plotMetricSubspaceParameters$level
@@ -216,7 +216,7 @@ dmLegend <- function(sortedLevelIndices,
       lPt <- c(lPt, c(1.0))
     }
   }
-  
+
   if(!is.null(plotEvaluateDataSourceParameters)) {
     lPchVector <- c(lPchVector, c(1, 1))
     lLegend <- paste("evaluated data source,", "density value >=", plotEvaluateDataSourceParameters[[1]])
@@ -247,13 +247,13 @@ dmPng <- function(plotMetricSubspaceParametersList,
                   plotEvaluateDataSourceParameters,
                   dimension) {
   png(imageFileName, width = 2000, height = 2000, units = "px")
-  
+
   sessionPar <- par(no.readonly = TRUE)
   on.exit(par(sessionPar))
   par(mar = c(6, 6, 6, 6))
-  
+
   dmPlot(title, dimension, columnIndices)
-  
+
   batchSize <- dmGetBatchSize()
   if(!is.null(plotMetricSubspaceParametersList)) {
     sortedLevelIndices <- dmGetSortedLevelIndices(plotMetricSubspaceParametersList)
@@ -261,15 +261,15 @@ dmPng <- function(plotMetricSubspaceParametersList,
       plotMetricSubspaceParameters <- plotMetricSubspaceParametersList[[sortedLevelIndex]]
       dmMetricSubspacesPoints(plotMetricSubspaceParameters, batchSize, dimension, columnIndices)
     }
-    
+
     if(evaluateDataSourceFileName != 0 && !is.null(plotEvaluateDataSourceParameters)) {
       evaluateLevel <- plotEvaluateDataSourceParameters[[1]]
-        
+
       dmEvaluateDataSourceRead(evaluateDataSourceFileName)
       dmEvaluateDataSourcePoints(evaluateLevel, batchSize, dimension, columnIndices, plotEvaluateDataSourceParameters[[2]], TRUE)
       dmEvaluateDataSourcePoints(evaluateLevel, batchSize, dimension, columnIndices, plotEvaluateDataSourceParameters[[2]], FALSE)
     }
-    
+
     for(index in 1:length(sortedLevelIndices)) {
       lPlotMetricSubspaceParameters <- plotMetricSubspaceParametersList[[sortedLevelIndices[index]]]
       rPlotMetricSubspaceParameters <- NULL
@@ -278,20 +278,20 @@ dmPng <- function(plotMetricSubspaceParametersList,
       }
       dmMetricSubspaceLabelPoints(lPlotMetricSubspaceParameters, rPlotMetricSubspaceParameters, batchSize, dimension, columnIndices)
     }
-    
+
   }
-  
+
   dmLegend(sortedLevelIndices,
            plotMetricSubspaceParametersList,
            plotEvaluateDataSourceParameters)
-  
+
   dev.off()
-  
+
   return()
 }
 
 #' Create an image file for metric subspaces
-#' 
+#'
 #' Create an image file containing two-dimensional projections of generative data
 #' contained in metric subspaces in a data model and optionally an evaluated data source.
 #' Plot parameters are passed by a list of generated plot parameters for different levels
@@ -308,17 +308,17 @@ dmPng <- function(plotMetricSubspaceParametersList,
 #' @param evaluateDataSourceFileName Name of evaluated data source file
 #' @param plotEvaluateDataSourceParameters Plot parameters for evaluated data source,
 #' see dmPlotEvaluateDataSourceParameters().
-#' 
+#'
 #' @return None
 #' @export
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' dmRead("dm.bin", "gd.bin")
 #' dmPlotMetricSubspaces(
-#'   list(dmPlotMetricSubspaceParameters(level = 0.7,
+#'   list(dmPlotMetricSubspaceParameters(level = 0.5,
 #'                                        labels = c("*"),
-#'                                        percent = 50,
+#'                                        percent = 100,
 #'                                        boundary = TRUE,
 #'                                        color = "red",
 #'                                        backgroundPercent = 0,
@@ -334,7 +334,7 @@ dmPlotMetricSubspaces <- function(
   plotMetricSubspaceParametersList = list(),
   imageFileName,
   title,
-  columnIndices, 
+  columnIndices,
   evaluateDataSourceFileName = "",
   plotEvaluateDataSourceParameters = NULL) {
 
@@ -358,14 +358,14 @@ dmPlotMetricSubspaces <- function(
       }
     }
   }
-  
+
   dmPng(plotMetricSubspaceParametersList,
         imageFileName,
         title,
-        columnIndices, 
+        columnIndices,
         evaluateDataSourceFileName,
         plotEvaluateDataSourceParameters,
         dimension)
-  
+
   return()
 }
